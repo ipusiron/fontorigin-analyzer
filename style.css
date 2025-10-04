@@ -1,0 +1,667 @@
+/**
+ * ===== FontOrigin Analyzer - Stylesheet =====
+ *
+ * Design Philosophy:
+ * - Modern, forensic tool aesthetic ("not too dark cyberpunk")
+ * - High contrast for readability of analysis results
+ * - Smooth theme transitions without jarring flashes
+ *
+ * Theme System:
+ * - CSS custom properties (CSS variables) for dynamic theme switching
+ * - Light/Dark mode toggle without page reload
+ * - Respects user's system preference (prefers-color-scheme)
+ *
+ * Color Palette:
+ * - Primary accents: Sky blue (info), Violet (secondary), Lime (success)
+ * - Semantic colors: Warning (orange), Danger (red)
+ * - Neutral grays: Background layers, borders, muted text
+ */
+
+/* ===== Theme Variables ===== */
+:root{
+  /* Light mode colors */
+  --bg:#f8fafc;         /* Page background (slate-50) */
+  --surface:#ffffff;    /* Card/header background */
+  --card:#ffffff;       /* Card-specific background */
+  --line:#e5e7eb;       /* Borders, dividers (gray-200) */
+  --text:#0f172a;       /* Primary text (slate-900) */
+  --muted:#475569;      /* Secondary text (slate-600) */
+
+  /* Accent colors */
+  --acc-sky:#0ea5e9;    /* Primary accent (cyan-500) - information, links */
+  --acc-violet:#7c3aed; /* Secondary accent (violet-600) - highlights */
+  --acc-lime:#65a30d;   /* Success/positive (lime-600) */
+
+  /* Semantic colors */
+  --warn:#b45309;       /* Warnings (amber-700) */
+  --danger:#dc2626;     /* Errors, critical alerts (red-600) */
+
+  /* Typography */
+  --font-sans: "Noto Sans JP", system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Apple Color Emoji","Segoe UI Emoji";
+}
+
+/* Dark mode theme overrides */
+:root.dark{
+  /* Dark mode colors - "not too dark" cyberpunk aesthetic */
+  --bg:#0f1220;         /* Deep navy background */
+  --surface:#141a2a;    /* Slightly lighter surface */
+  --card:#171e2f;       /* Card background with subtle depth */
+  --line:#283145;       /* Border color (muted blue-gray) */
+  --text:#e6e9f2;       /* Off-white text (easier on eyes than pure white) */
+  --muted:#aab3c7;      /* Muted text (blue-tinted gray) */
+
+  /* Brighter accent colors for dark mode (higher contrast) */
+  --acc-sky:#22d3ee;    /* Cyan-400 */
+  --acc-violet:#a78bfa; /* Violet-400 */
+  --acc-lime:#a3e635;   /* Lime-400 */
+
+  /* Semantic colors - slightly brighter for dark mode */
+  --warn:#f59e0b;       /* Amber-500 */
+  --danger:#ef4444;     /* Red-500 */
+}
+
+/**
+ * ===== Base Styles =====
+ *
+ * Reset and foundational styles
+ * - box-sizing: border-box for predictable sizing
+ * - Smooth font rendering (antialiased)
+ * - Responsive container with max-width
+ */
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--font-sans);
+  -webkit-font-smoothing:antialiased; /* Better font rendering on macOS/iOS */
+  line-height:1.6;
+}
+.container{
+  max-width:1280px;
+  margin:0 auto;
+  padding:0 16px;
+}
+
+/* Main Content */
+.main-content{
+  max-width:1280px; margin:0 auto; padding:1.5rem 1rem;
+}
+.main-content > section{
+  margin-bottom:1.5rem;
+}
+
+/* Tab Description */
+.tab-description{
+  background: linear-gradient(135deg,
+    color-mix(in oklab, var(--acc-sky) 8%, var(--surface)),
+    color-mix(in oklab, var(--acc-violet) 8%, var(--surface))
+  );
+  border-left: 3px solid var(--acc-sky);
+  border-radius: 0.5rem;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+.tab-description p{
+  margin: 0;
+  color: var(--text);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+/* Analyze Grid */
+.analyze-grid{
+  display:grid; gap:1rem;
+  grid-template-columns:1fr;
+}
+@media (min-width: 1024px){
+  .analyze-grid{
+    grid-template-columns:1fr 1.15fr;
+  }
+}
+.analyze-left,
+.analyze-right{
+  display:flex; flex-direction:column; gap:1rem;
+}
+
+/* Header & Footer */
+.header{
+  min-height:100px; display:flex; align-items:center;
+  background:var(--surface); border-bottom:1px solid var(--line);
+  backdrop-filter:saturate(140%) blur(6px);
+  position:relative; z-index:100; padding:1.25rem 0;
+}
+.header .container{
+  display:flex; align-items:center; justify-content:space-between;
+  width:100%; gap:2rem;
+}
+.header-brand{
+  display:flex; flex-direction:column; gap:0.25rem;
+}
+.header-title{
+  font-size:2.5rem; font-weight:800;
+  background: linear-gradient(135deg, var(--acc-sky), var(--acc-violet));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin:0; line-height:1.2;
+}
+.header-tagline{
+  font-size:1rem; color:var(--muted);
+  margin:0; font-weight:500; letter-spacing:0.02em;
+}
+.header-actions{
+  display:flex; align-items:center; gap:1rem; flex-shrink:0;
+}
+
+/* Header Responsive */
+@media (max-width: 768px){
+  .header{
+    min-height:auto; padding:0.75rem 0;
+  }
+  .header .container{
+    flex-direction:column; align-items:flex-start; gap:1rem;
+  }
+  .header-title{
+    font-size:1.75rem;
+  }
+  .header-tagline{
+    font-size:0.875rem;
+  }
+  .header-actions{
+    width:100%; justify-content:space-between;
+  }
+  .tabs{
+    flex:1;
+  }
+}
+.footer{
+  min-height:60px; display:flex; align-items:center; justify-content:center;
+  padding:8px 0; background:var(--surface); border-top:1px solid var(--line);
+}
+
+/* Tabs */
+.tabs{display:flex; gap:.5rem; flex-wrap:wrap}
+.tab{
+  background:var(--surface); color:var(--muted);
+  border:1px solid var(--line); border-radius:.75rem;
+  padding:.65rem 1.1rem; min-height:44px;
+  display:inline-flex; align-items:center; justify-content:center;
+  font-weight:600; cursor:pointer;
+  transition: all 0.2s ease;
+}
+.tab:hover:not(.is-active){
+  background: color-mix(in oklab, var(--surface) 95%, var(--acc-sky) 5%);
+  border-color: color-mix(in oklab, var(--line) 70%, var(--acc-sky) 30%);
+}
+.tab:focus-visible{
+  outline: 2px solid var(--acc-sky);
+  outline-offset: 2px;
+}
+.tab.is-active{
+  color:var(--text); border-color:var(--acc-sky);
+  background: linear-gradient(180deg, color-mix(in oklab, var(--surface) 70%, transparent 30%), var(--surface));
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--acc-sky) 40%, transparent 60%),
+              0 0 14px color-mix(in oklab, var(--acc-sky) 25%, transparent 75%);
+}
+
+/**
+ * ===== Card Components =====
+ *
+ * Primary content containers for analysis results
+ * - Basic card: Simple white/dark container
+ * - Pattern card: Subtle gradient overlay for visual interest
+ *
+ * Design: Soft shadows, rounded corners (1rem = 16px)
+ */
+.card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:1rem;
+  padding:1rem;
+  box-shadow: 0 1px 2px #0000000a; /* Subtle depth */
+  position:relative;
+  overflow:visible; /* Allow tooltips to overflow */
+}
+
+/* Card with decorative gradient pattern (used in main sections) */
+.card--pattern{
+  background:
+    radial-gradient(1200px 600px at 120% -10%, #22d3ee0e, transparent 60%),  /* Cyan glow top-right */
+    radial-gradient(1200px 600px at -20% 110%, #a78bfa12, transparent 60%),  /* Violet glow bottom-left */
+    var(--card);
+}
+
+.card-title{font-size:1.15rem; font-weight:800}
+.card-subtitle{font-size:1rem; font-weight:700}
+
+/* Gradient divider line (cyan to violet) */
+.grad-line{
+  background: linear-gradient(90deg, #22d3ee33, #a78bfa55, #22d3ee33);
+  height:1px;
+  border:0;
+}
+
+/* Uploader */
+.uploader{
+  border:2px dashed var(--line); border-radius:1rem; padding:1rem; text-align:center;
+  cursor:pointer; transition: all 0.2s ease;
+}
+.uploader:hover{
+  border-color: color-mix(in oklab, var(--acc-sky) 55%, var(--line));
+  background: color-mix(in oklab, var(--acc-sky) 3%, var(--card));
+}
+.uploader.ring{
+  border-color: var(--acc-sky);
+  background: color-mix(in oklab, var(--acc-sky) 5%, var(--card));
+  transform: scale(1.01);
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--acc-sky) 15%, transparent);
+}
+.file-input{ display:block; margin: .5rem auto 0; }
+.file-input-hidden{ display:none; }
+
+/* Buttons */
+.btn{
+  background:var(--surface); color:var(--text);
+  border:1px solid var(--line); border-radius:.8rem; padding:.5rem .9rem; cursor:pointer;
+  transition: all 0.2s ease; font-weight:600;
+}
+.btn:focus-visible{
+  outline: 2px solid var(--acc-sky);
+  outline-offset: 2px;
+}
+.btn:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* Primary Button */
+.btn-primary{
+  background: linear-gradient(135deg, var(--acc-sky), #0891b2);
+  color: #ffffff;
+  border-color: var(--acc-sky);
+  padding: .65rem 1.5rem;
+  font-size: 1rem;
+  box-shadow: 0 2px 8px color-mix(in oklab, var(--acc-sky) 30%, transparent),
+              0 0 0 1px color-mix(in oklab, var(--acc-sky) 20%, transparent);
+}
+.btn-primary:hover{
+  background: linear-gradient(135deg, #0ea5e9, #06b6d4);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px color-mix(in oklab, var(--acc-sky) 40%, transparent),
+              0 0 24px color-mix(in oklab, var(--acc-sky) 25%, transparent),
+              0 0 0 1px var(--acc-sky);
+}
+.btn-primary:active{
+  transform: translateY(0);
+}
+
+/* Segmented */
+.seg{display:inline-flex; gap:.4rem; align-items:center}
+.seg-btn{
+  background:var(--surface); border:1px solid var(--line); padding:.3rem .6rem; border-radius:.6rem; cursor:pointer;
+  transition: all 0.2s ease;
+}
+.seg-btn:hover:not(.seg-on){
+  background: color-mix(in oklab, var(--surface) 95%, var(--acc-sky) 5%);
+}
+.seg-btn:focus-visible{
+  outline: 2px solid var(--acc-sky);
+  outline-offset: 2px;
+}
+.seg-btn.seg-on{ border-color:var(--acc-sky); color:var(--text) }
+
+/* Preview */
+.preview{
+  min-height:160px;
+  position:relative;
+  background: repeating-conic-gradient(#f0f0f0 0% 25%, #ffffff 0% 50%) 50% / 20px 20px;
+  border-radius:8px;
+  padding:8px;
+}
+:root.dark .preview{
+  background: repeating-conic-gradient(#2a2a2a 0% 25%, #1a1a1a 0% 50%) 50% / 20px 20px;
+}
+canvas{
+  display:block;
+  max-width:100%;
+  min-height:400px;
+  border:2px solid rgba(0,0,0,0.1);
+  border-radius:4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  background:#ffffff;
+}
+:root.dark canvas{
+  border-color:rgba(255,255,255,0.15);
+  background:#2d2d2d;
+}
+/* Chart canvases - no min-height */
+#chartLineGap{
+  min-height:unset;
+  height:120px;
+}
+/* Comparison canvases - set initial dimensions */
+#canvasLeft, #canvasRight{
+  width:100%;
+  min-height:200px;
+  max-height:500px;
+  height:auto;
+  object-fit:contain;
+}
+
+/* Empty State */
+.empty-state{
+  min-height:240px; display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  color:var(--muted); text-align:center; gap:1rem;
+}
+.empty-state svg{
+  opacity:0.5;
+}
+
+/* Spinner */
+.spinner{
+  width:16px; height:16px;
+  border:2px solid var(--line);
+  border-top-color:var(--acc-sky);
+  border-radius:50%;
+  animation: spin 0.6s linear infinite;
+}
+@keyframes spin{
+  to{ transform:rotate(360deg); }
+}
+
+/* Pills */
+.pill{
+  display:inline-flex; gap:.45rem; align-items:center;
+  padding:.2rem .6rem; border:1px solid var(--line); border-radius:9999px; background:var(--surface);
+}
+.pill .dot{width:8px; height:8px; border-radius:9999px; background:var(--acc-sky)}
+
+/* Mini-cards/list */
+.mini-card{border:1px solid var(--line); border-radius:.8rem; padding:.6rem}
+.mini-title{font-weight:700; margin-bottom:.25rem}
+.mini-list{margin:0; padding:0 0 0 1rem}
+
+/**
+ * ===== Accordion Component =====
+ *
+ * Collapsible sections for guide tab
+ * Uses native HTML <details> element for accessibility
+ *
+ * Features:
+ * - Smooth expand/collapse animation
+ * - Rotating arrow icon (▼ → ►)
+ * - Hover effect for interactivity feedback
+ *
+ * Usage:
+ * <details class="acc">
+ *   <summary><span class="acc-icon">▼</span> Title</summary>
+ *   <div class="acc-content">Content...</div>
+ * </details>
+ */
+.acc{
+  position:relative;
+  overflow:visible;
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:0.75rem;
+  margin-bottom:0.75rem;
+  background:var(--surface);
+  transition: box-shadow 0.2s;
+}
+.acc:hover{
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08); /* Depth on hover */
+}
+.acc > summary{
+  cursor:pointer;
+  font-weight:600;
+  position:relative;
+  display:flex;
+  align-items:center;
+  gap:0.5rem;
+  padding:0.25rem;
+  list-style:none; /* Hide default disclosure triangle */
+  user-select:none; /* Prevent text selection on double-click */
+}
+.acc > summary::-webkit-details-marker{
+  display:none; /* Hide WebKit's default marker */
+}
+.acc-icon{
+  display:inline-block;
+  font-size:0.75rem;
+  transition: transform 0.2s; /* Smooth rotation */
+  color:var(--acc-sky);
+  font-weight:bold;
+}
+.acc:not([open]) .acc-icon{
+  transform: rotate(-90deg); /* Point right when closed */
+}
+.acc[open] > summary{
+  margin-bottom:0.75rem;
+  padding-bottom:0.5rem;
+  border-bottom:1px solid var(--line); /* Separator when expanded */
+}
+.acc-content{
+  animation: slideDown 0.2s ease-out; /* Smooth reveal */
+}
+@keyframes slideDown{
+  from{
+    opacity:0;
+    transform:translateY(-8px);
+  }
+  to{
+    opacity:1;
+    transform:translateY(0);
+  }
+}
+
+/* Margin map & glyph */
+.margin-map{width:100%; aspect-ratio:1.414/1; border:1px dashed var(--line); border-radius:.6rem; position:relative; overflow:hidden}
+.margin-map::before{content:""; position:absolute; inset:0; background:conic-gradient(from 90deg, #22d3ee22, transparent)}
+.glyph-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(110px, 1fr)); gap:1rem; padding:0.5rem}
+.glyph-grid > div{
+  transition: transform 0.2s, filter 0.2s;
+}
+.glyph-grid > div:hover{
+  transform:scale(1.08);
+  filter: drop-shadow(0 4px 12px rgba(34, 211, 238, 0.3));
+  z-index:10;
+}
+
+/* Progress text (file name display) */
+#analyzeProgress, #compareProgress{
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 1;
+}
+
+/* JSON */
+.jsonbox{
+  width:100%; min-height:120px; max-height:400px;
+  border:1px solid var(--line); border-radius:.6rem;
+  background:var(--surface); color:var(--text); padding:.6rem;
+  font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size:0.85rem; line-height:1.5; tab-size:2;
+  white-space:pre-wrap; word-wrap:break-word;
+  overflow-y:auto; overflow-x:hidden;
+  resize:none;
+}
+.jsonbox::-webkit-scrollbar{
+  width:8px;
+}
+.jsonbox::-webkit-scrollbar-thumb{
+  background:var(--line);
+  border-radius:4px;
+}
+.jsonbox::-webkit-scrollbar-thumb:hover{
+  background:color-mix(in oklab, var(--line) 80%, var(--text) 20%);
+}
+
+/* Score */
+.score-block{font-size:2.2rem; font-weight:900}
+
+/* Table */
+.corpus-table{border-collapse:collapse}
+.corpus-table th, .corpus-table td{border:1px solid var(--line); padding:.5rem .6rem; text-align:left}
+
+/**
+ * ===== Tooltip Component =====
+ *
+ * Help button (?) with floating tooltip
+ * Rendered in portal (document.body) to avoid z-index issues
+ *
+ * Design:
+ * - Circular help button with "?" icon
+ * - Hover/click triggers tooltip
+ * - Smart positioning (flips if too close to viewport edge)
+ * - High z-index (9999) to appear above all content
+ *
+ * Accessibility:
+ * - cursor:help for semantic cursor
+ * - aria-describedby linking to tooltip ID
+ * - Focus-visible outline for keyboard navigation
+ */
+.qmark{
+  margin-left:.5rem;
+  width:22px;
+  height:22px;
+  border-radius:9999px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:700;
+  font-size:12px;
+  line-height:1;
+  color:var(--muted);
+  background:var(--surface);
+  border:2px solid var(--line);
+  cursor:help; /* Semantic cursor for help content */
+  transition: all 0.2s ease;
+}
+.qmark:hover{
+  background: color-mix(in oklab, var(--surface) 90%, var(--acc-sky) 10%);
+  border-color: var(--acc-sky);
+  color: var(--acc-sky);
+  box-shadow:0 0 10px color-mix(in oklab,var(--acc-sky) 30%, transparent); /* Glow effect */
+}
+.qmark:focus-visible{
+  outline: 2px solid var(--acc-sky);
+  outline-offset: 2px;
+}
+
+/* Dark mode enhancements */
+:root.dark .qmark{
+  background: var(--card);
+  border-color: color-mix(in oklab, var(--line) 50%, var(--text) 50%);
+  color: var(--muted);
+}
+:root.dark .qmark:hover{
+  background: color-mix(in oklab, var(--card) 80%, var(--acc-sky) 20%);
+  border-color: var(--acc-sky);
+  color: var(--acc-sky);
+}
+
+/* Tooltip bubble (portal-rendered to body) */
+.tooltip{
+  position:fixed; /* Portal positioning */
+  max-width:416px;
+  padding:14px 16px;
+  border-radius:12px;
+  background: color-mix(in oklab, var(--card) 92%, black 8%); /* Subtle darkening */
+  color:var(--text);
+  border:1px solid var(--line);
+  box-shadow: 0 10px 30px #0008, 0 0 0 .5px color-mix(in oklab,var(--acc-sky)20%,transparent);
+  z-index:9999; /* Above all content */
+  line-height:1.6;
+  font-size:0.9rem;
+}
+.tooltip strong{
+  color:var(--acc-sky); /* Highlight important terms */
+}
+
+/* Theme Toggle */
+.theme-toggle-inline{
+  position: relative;
+  width: 36px; height: 36px; border-radius: 9999px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--surface); color: var(--text);
+  border: 2px solid var(--line);
+  box-shadow: 0 2px 8px rgba(0,0,0,.1);
+  cursor: pointer; transition: all .2s ease;
+}
+.theme-toggle-inline:hover{
+  transform: translateY(-1px);
+  background: color-mix(in oklab, var(--surface) 90%, var(--acc-sky) 10%);
+  box-shadow: 0 4px 12px rgba(0,0,0,.15),
+              0 0 14px color-mix(in oklab, var(--acc-sky) 20%, transparent);
+  border-color: var(--acc-sky);
+}
+.theme-toggle-inline:focus-visible{
+  outline: 2px solid var(--acc-sky);
+  outline-offset: 2px;
+}
+/* Dark mode specific styling */
+:root.dark .theme-toggle-inline{
+  background: var(--card);
+  border-color: color-mix(in oklab, var(--line) 50%, var(--text) 50%);
+}
+:root.dark .theme-toggle-inline:hover{
+  background: color-mix(in oklab, var(--card) 80%, var(--acc-sky) 20%);
+  border-color: var(--acc-sky);
+}
+
+/* Toast Notification */
+.toast{
+  position:fixed; bottom:24px; right:24px;
+  padding:12px 20px; border-radius:8px;
+  background:var(--card); border:1px solid var(--line);
+  box-shadow:0 8px 24px rgba(0,0,0,0.2);
+  transform:translateY(100px); opacity:0;
+  transition:all 0.3s ease; z-index:10000;
+  max-width:360px;
+}
+.toast.show{
+  transform:translateY(0); opacity:1;
+}
+.toast-info{
+  border-left:3px solid var(--acc-sky);
+}
+.toast-success{
+  border-left:3px solid var(--acc-lime);
+}
+.toast-error{
+  border-left:3px solid var(--danger);
+}
+.toast-warning{
+  border-left:3px solid var(--warn);
+}
+
+/* Utilities */
+.hidden{display:none}
+.prose{line-height:1.7}
+.prose h3{margin:.2rem 0}
+
+/* Flex Utilities */
+.flex{display:flex}
+.items-center{align-items:center}
+.justify-between{justify-content:space-between}
+.flex-wrap{flex-wrap:wrap}
+.gap-2{gap:0.5rem}
+.gap-3{gap:0.75rem}
+.gap-4{gap:1rem}
+.mt-2{margin-top:0.5rem}
+.mt-3{margin-top:0.75rem}
+.mt-4{margin-top:1rem}
+.my-3{margin-top:0.75rem; margin-bottom:0.75rem}
+.mb-2{margin-bottom:0.5rem}
+
+/* Grid Utilities */
+.grid{display:grid}
+.md\:grid-cols-2{grid-template-columns:1fr}
+@media (min-width: 768px){
+  .md\:grid-cols-2{grid-template-columns:repeat(2, 1fr)}
+}

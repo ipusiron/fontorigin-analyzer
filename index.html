@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>FontOrigin Analyzer - 文書出所解析ツール</title>
+  <meta name="description" content="フォントや版面の特徴から文書の出所を推定するフォレンジックツール" />
+
+  <!-- Security Headers (Note: X-Frame-Options must be set via HTTP headers, not meta tags) -->
+  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
+
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
+  <link rel="preconnect" href="https://unpkg.com" crossorigin />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="container">
+      <div class="header-brand">
+        <h1 class="header-title">FontOrigin Analyzer</h1>
+        <p class="header-tagline">フォントと版面の特徴から文書の出所を推定するフォレンジックツール</p>
+      </div>
+      <div class="header-actions">
+        <nav class="tabs">
+          <button class="tab is-active" data-tab="analyze">解析</button>
+          <button class="tab" data-tab="compare">比較</button>
+          <button class="tab" data-tab="corpus">コーパス</button>
+          <button class="tab" data-tab="guide">ガイド</button>
+        </nav>
+        <!-- Theme toggle (shows the NEXT mode's icon; moon in light, sun in dark) -->
+        <button id="themeToggle" class="theme-toggle-inline" aria-label="ダークモードに切り替え" title="テーマ切り替え">
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <!-- 解析 -->
+    <section id="tab-analyze" class="tabpane">
+      <div class="tab-description">
+        <p>文書ファイルをアップロードし、フォント・余白・行間などの版面特徴を抽出。文書の出所推定や改ざん検知に活用できるFontPrint（指紋）を生成します。</p>
+      </div>
+      <div class="analyze-grid">
+        <div class="analyze-left">
+          <div class="card card--pattern">
+            <h2 class="card-title">ファイルを解析</h2>
+            <hr class="grad-line my-3" />
+            <div class="uploader" id="dropAnalyze">
+              <p class="mb-2">ここに <strong>PDF / PNG / JPG / DOCX / TXT</strong> をドロップ（またはクリックして選択）</p>
+              <input type="file" id="fileAnalyze" class="file-input-hidden" accept=".pdf,.png,.jpg,.jpeg,.docx,.txt" />
+              <div class="text-sm text-[color:var(--muted)] mt-2">
+                TXTは仮想レンダリング、DOCXはXML解析、PDF/画像はOCRでレイアウト解析を行います。
+              </div>
+            </div>
+
+            <div class="mt-4 flex items-center gap-3">
+              <span>モード</span>
+              <div class="seg">
+                <button class="seg-btn seg-on" data-mode="balanced" id="modeBalanced">バランス</button>
+                <button class="seg-btn" data-mode="fast" id="modeFast">高速</button>
+                <button class="seg-btn" data-mode="accurate" id="modeAccurate">高精度</button>
+                <button class="qmark" aria-label="ヘルプ" aria-describedby="tip-mode">？</button>
+                <div id="tip-mode" class="tooltip" role="tooltip" hidden>
+                  高速：OCRの精度より速度優先。<br>高精度：文字ボックス精度と正規化を強化。<br>バランス：中間設定。
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-4 flex items-center gap-3">
+              <button id="btnAnalyze" class="btn btn-primary">解析する</button>
+              <div class="flex items-center gap-2">
+                <div id="analyzeSpinner" class="spinner hidden"></div>
+                <span id="analyzeProgress" class="text-sm text-[color:var(--muted)]"></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3 class="card-subtitle">プレビュー</h3>
+            <div class="preview" id="previewAnalyze">
+              <div id="emptyState" class="empty-state">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <p>ファイルを選択すると<br>プレビューが表示されます</p>
+              </div>
+              <canvas id="canvasAnalyze" class="w-full rounded-lg border border-[var(--line)] hidden"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <aside class="analyze-right">
+          <div class="card">
+            <h3 class="card-subtitle">結果サマリー</h3>
+            <div class="flex flex-wrap gap-3 items-center">
+              <span class="pill" id="certaintyPill"><span class="dot"></span>確からしさ</span>
+              <button class="qmark" aria-label="ヘルプ" aria-describedby="tip-certainty">？</button>
+              <div id="tip-certainty" class="tooltip" role="tooltip" hidden>
+                解析結果の信頼性レベルです。<br><strong>高</strong>（PDF/画像）は版面が固定されておりもっとも正確。<br><strong>中</strong>（DOCX）はXML定義ベースで実レンダーと差異あり。<br><strong>低</strong>（TXT）は仮想レンダリングで条件依存です。
+              </div>
+              <span id="sourceType" class="text-sm text-[color:var(--muted)]"></span>
+            </div>
+            <div class="mt-3 grid md:grid-cols-2 gap-3">
+              <div class="mini-card">
+                <div class="mini-title">フォント候補</div>
+                <ul id="fontCandidates" class="mini-list"></ul>
+              </div>
+              <div class="mini-card">
+                <div class="mini-title">レイアウト要約</div>
+                <ul id="layoutSummary" class="mini-list"></ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3 class="card-subtitle">詳細・可視化</h3>
+            <details class="acc">
+              <summary>
+                <span class="acc-icon">▼</span>
+                行間・字間分布
+                <button class="qmark" aria-label="ヘルプ" aria-describedby="tip-linegap">？</button>
+              </summary>
+              <div id="tip-linegap" class="tooltip" role="tooltip" hidden>
+                文書内の行間や文字間隔の分布を可視化します。<br>一定のパターンがあれば特定のテンプレートや作成ツールを示唆します。
+              </div>
+              <div class="acc-content">
+                <canvas id="chartLineGap" height="120"></canvas>
+              </div>
+            </details>
+            <details class="acc">
+              <summary>
+                <span class="acc-icon">▼</span>
+                余白ヒートマップ
+                <button class="qmark" aria-label="ヘルプ" aria-describedby="tip-margin">？</button>
+              </summary>
+              <div id="tip-margin" class="tooltip" role="tooltip" hidden>
+                文書の上下左右の余白を視覚化します。<br>余白比率は組織やテンプレート固有の特徴となり、出所推定の重要な手がかりになります。
+              </div>
+              <div class="acc-content">
+                <div id="marginMap" class="margin-map"></div>
+              </div>
+            </details>
+            <details class="acc">
+              <summary>
+                <span class="acc-icon">▼</span>
+                代表グリフ比較
+                <button class="qmark" aria-label="ヘルプ" aria-describedby="tip-glyph">？</button>
+              </summary>
+              <div id="tip-glyph" class="tooltip" role="tooltip" hidden>
+                OCRの境界ボックスから代表文字（a,e,g,1,l,"）の形状を抽出し、近似的に特徴を可視化します。
+              </div>
+              <div class="acc-content">
+                <div id="glyphGrid" class="glyph-grid"></div>
+              </div>
+            </details>
+          </div>
+
+          <div class="card">
+            <h3 class="card-subtitle flex items-center gap-2">FontPrint JSON
+              <button class="qmark" aria-label="ヘルプ" aria-describedby="tip-json">？</button>
+            </h3>
+            <div id="tip-json" class="tooltip" role="tooltip" hidden>
+              解析特徴を正規化し、類似検索や比較に利用できるJSON形式です（個人情報は含みません）。
+            </div>
+            <textarea id="jsonOut" class="jsonbox" readonly></textarea>
+            <div class="mt-2 flex gap-2">
+              <button id="btnCopyJson" class="btn">コピー</button>
+              <button id="btnSaveCorpus" class="btn">コーパスに保存</button>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- 比較 -->
+    <section id="tab-compare" class="tabpane hidden">
+      <div class="tab-description">
+        <p>2つの文書のフォント・余白・行間などの特徴を比較し、同一性や改ざんの可能性を検証できます。</p>
+      </div>
+      <div class="card card--pattern">
+        <h2 class="card-title">2つのファイルを比較</h2>
+        <hr class="grad-line my-3" />
+        <div class="grid gap-3 md:grid-cols-2">
+          <div class="uploader" id="dropLeft">
+            <p class="mb-2">左側: <strong>PDF / PNG / JPG / DOCX / TXT</strong> をドロップ（またはクリックして選択）</p>
+            <input type="file" id="fileLeft" class="file-input-hidden" accept=".pdf,.png,.jpg,.jpeg,.docx,.txt" />
+            <canvas id="canvasLeft" class="w-full rounded-lg border border-[var(--line)] mt-2"></canvas>
+          </div>
+          <div class="uploader" id="dropRight">
+            <p class="mb-2">右側: <strong>PDF / PNG / JPG / DOCX / TXT</strong> をドロップ（またはクリックして選択）</p>
+            <input type="file" id="fileRight" class="file-input-hidden" accept=".pdf,.png,.jpg,.jpeg,.docx,.txt" />
+            <canvas id="canvasRight" class="w-full rounded-lg border border-[var(--line)] mt-2"></canvas>
+          </div>
+        </div>
+        <div class="mt-3 flex items-center gap-3">
+          <button id="btnCompare" class="btn btn-primary">比較する</button>
+          <div class="flex items-center gap-2">
+            <div id="compareSpinner" class="spinner hidden"></div>
+            <span id="compareProgress" class="text-sm text-[color:var(--muted)]"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid gap-4 md:grid-cols-2">
+        <div class="card">
+          <h3 class="card-subtitle">一致／不一致リスト</h3>
+          <ul id="diffList" class="mini-list"></ul>
+        </div>
+        <div class="card">
+          <h3 class="card-subtitle">総合スコア</h3>
+          <div id="scoreBlock" class="score-block">–</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- コーパス -->
+    <section id="tab-corpus" class="tabpane hidden">
+      <div class="tab-description">
+        <p>解析結果（FontPrint）を保存・管理し、後から再利用や比較分析に活用できます。エクスポート・インポートで複数環境での共有も可能です。</p>
+      </div>
+      <div class="card">
+        <h2 class="card-title">保存済みFontPrint</h2>
+        <hr class="grad-line my-3" />
+        <div id="corpusTableWrap" class="overflow-auto">
+          <table class="w-full corpus-table">
+            <thead>
+              <tr><th>ID</th><th>種別</th><th>日付</th><th>概要</th><th>操作</th></tr>
+            </thead>
+            <tbody id="corpusBody"></tbody>
+          </table>
+        </div>
+        <div class="mt-3">
+          <button id="btnExportCorpus" class="btn">JSONエクスポート</button>
+          <input type="file" id="importCorpus" accept="application/json" class="hidden" />
+          <button id="btnImportCorpus" class="btn">JSONインポート</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ガイド -->
+    <section id="tab-guide" class="tabpane hidden">
+      <div class="card card--pattern">
+        <h2 class="card-title">使い方・注意事項</h2>
+        <hr class="grad-line my-3" />
+        <div class="prose prose-invert">
+          <details class="acc" open>
+            <summary><span class="acc-icon">▼</span> 📋 ツールの目的</summary>
+            <div class="acc-content">
+              <p>フォント・行間・余白など<strong>版面の癖</strong>から、文書の出所を推定する学習・調査向けツールです。<br>
+              完全クライアント実行のため、<strong>ファイルはサーバーに送信されません</strong>。安全にお試しいただけます。</p>
+            </div>
+          </details>
+
+          <details class="acc">
+            <summary><span class="acc-icon">▼</span> 📂 対応ファイル形式と確からしさ</summary>
+            <div class="acc-content">
+              <ul style="list-style:none; padding-left:0;">
+                <li style="margin-bottom:0.75rem;">
+                  <strong style="color:var(--acc-sky);">✓ PDF / 画像（.pdf .png .jpg）</strong> - 確からしさ: <strong style="color:var(--acc-lime);">高</strong><br>
+                  <span style="font-size:0.9rem; color:var(--muted);">OCRで版面を解析。固定レイアウトのためもっとも正確な結果が得られます。</span><br>
+                  <span style="font-size:0.85rem; color:var(--muted);">処理時間: 数秒〜数十秒（OCR実行）</span>
+                </li>
+                <li style="margin-bottom:0.75rem;">
+                  <strong style="color:var(--acc-violet);">✓ DOCX（.docx）</strong> - 確からしさ: <strong style="color:var(--warn);">中</strong><br>
+                  <span style="font-size:0.9rem; color:var(--muted);">XMLから余白・フォント情報を直接抽出。本文も1ページ目をプレビュー表示。</span><br>
+                  <span style="font-size:0.85rem; color:var(--muted);">注意: XML定義と実際のレンダリング結果が異なる場合あり。</span>
+                </li>
+                <li style="margin-bottom:0.75rem;">
+                  <strong style="color:var(--acc-lime);">✓ TXT（.txt）</strong> - 確からしさ: <strong style="color:var(--muted);">低</strong><br>
+                  <span style="font-size:0.9rem; color:var(--muted);">仮想レンダリングで解析。版面情報を持たないため環境依存が大きい。</span><br>
+                  <span style="font-size:0.85rem; color:var(--muted);">文字コード: UTF-8 / Shift_JIS 自動判定対応</span>
+                </li>
+                <li>
+                  <strong style="color:var(--muted);">✗ DOC（.doc）</strong> - 未対応<br>
+                  <span style="font-size:0.9rem; color:var(--muted);">バイナリ形式のため直接解析不可。.docx または .pdf に変換してください。</span>
+                </li>
+              </ul>
+            </div>
+          </details>
+
+          <details class="acc">
+            <summary><span class="acc-icon">▼</span> 🔍 3つの解析モード（解析タブ）</summary>
+            <div class="acc-content">
+              <ul>
+                <li><strong>バランス</strong>: OCR精度と速度のバランス型（推奨）</li>
+                <li><strong>高速</strong>: OCR処理を高速化（精度やや低）</li>
+                <li><strong>高精度</strong>: 文字境界ボックスの精度を最大化（処理時間増）</li>
+              </ul>
+            </div>
+          </details>
+
+          <details class="acc">
+            <summary><span class="acc-icon">▼</span> 🛠 フォレンジック・OSINT活用例</summary>
+            <div class="acc-content">
+              <ul>
+                <li><strong>文書改ざん検知</strong>: 同一文書の改訂版を比較し、フォント・余白の変化から編集痕跡を検出</li>
+                <li><strong>出所・作成環境の鑑識</strong>: 余白比率・行間から組織やテンプレートの癖を特定</li>
+                <li><strong>編集チェーン復元</strong>: Word→PDF→画像など変換履歴をフォント変化から推定</li>
+                <li><strong>公開文書テンプレート照合</strong>: 匿名リーク文書と既知の組織文書を比較</li>
+                <li><strong>偽情報検証</strong>: 「公文書」と称する文書の余白・フォントが標準と一致するか確認</li>
+                <li><strong>AI生成らしさ判定</strong>: 生成AIによる文書は行間・フォントペアが不自然になりやすい</li>
+              </ul>
+            </div>
+          </details>
+
+          <details class="acc">
+            <summary><span class="acc-icon">▼</span> 🔒 プライバシーと倫理</summary>
+            <div class="acc-content">
+              <ul>
+                <li><strong>完全クライアント処理</strong>: ファイルはブラウザー内で解析され、サーバーに送信されません</li>
+                <li><strong>ローカル保存</strong>: コーパス機能はlocalStorage利用（端末内のみ）</li>
+                <li><strong>個人情報厳禁</strong>: デモページには個人情報や機密文書をアップロードしないでください</li>
+                <li><strong>教育・研究目的</strong>: 悪意ある解析目的での利用は禁止。教育・研究・展示用途を前提としています</li>
+              </ul>
+            </div>
+          </details>
+
+          <details class="acc">
+            <summary><span class="acc-icon">▼</span> ⚠️ 重要な注意事項</summary>
+            <div class="acc-content">
+              <p style="background:rgba(220,38,38,0.1); border-left:3px solid var(--danger); padding:0.75rem; border-radius:0.5rem;">
+                本ツールの解析結果は<strong>「推定の手がかり」</strong>であり、単独で真偽を断定できるものではありません。<br>
+                複数の特徴を組み合わせて総合的に判断し、必要に応じて他の証拠と照合してください。
+              </p>
+            </div>
+          </details>
+
+          <details class="acc">
+            <summary><span class="acc-icon">▼</span> 📖 詳細ドキュメント</summary>
+            <div class="acc-content">
+              <p>より詳しい仕様や活用シナリオは、<a href="https://github.com/ipusiron/fontorigin-analyzer" target="_blank" style="color:var(--acc-sky);">GitHubリポジトリのREADME</a>をご覧ください。</p>
+            </div>
+          </details>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container text-center">
+      🔗 GitHubリポジトリはこちら（ <a href="https://github.com/ipusiron/fontorigin-analyzer" target="_blank">ipusiron/fontorigin-analyzer</a> ）
+    </div>
+  </footer>
+
+  <!-- External Libraries (must load before script.js) -->
+  <!-- Tesseract.js (OCR) - SRI disabled due to CDN inconsistency -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.0/dist/tesseract.min.js"
+          crossorigin="anonymous"></script>
+
+  <!-- pdf.js - use ONLY cdnjs version -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"
+          crossorigin="anonymous"
+          referrerpolicy="no-referrer"></script>
+  <script>
+    // Configure PDF.js worker immediately after library loads
+    console.log('[HTML] After pdf.js script - pdfjsLib:', typeof pdfjsLib);
+
+    if(typeof pdfjsLib !== 'undefined'){
+      pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+      console.log('[PDF.js] Library loaded, worker configured to:', pdfjsLib.GlobalWorkerOptions.workerSrc);
+    } else {
+      console.error('[HTML] pdfjsLib is still undefined after script tag!');
+    }
+  </script>
+
+  <!-- JSZip for DOCX - SRI disabled due to CDN inconsistency -->
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"
+          crossorigin="anonymous"></script>
+
+  <script src="script.js"></script>
+</body>
+</html>
