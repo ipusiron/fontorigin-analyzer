@@ -1,11 +1,38 @@
 <!--
 ---
-title: FontOrigin Analyzer
-category: forensic
-difficulty: 3
-description: A web-based forensic tool that analyzes document fonts and layout patterns to infer their origin.
-tags: [font, forensic, document, osint, ui]
-demo: https://ipusiron.github.io/fontorigin-analyzer/
+id: day090
+slug: fontorigin-analyzer
+
+title: "FontOrigin Analyzer"
+
+subtitle_ja: "文書出所解析ツール"
+subtitle_en: "Document Origin Forensic Analyzer"
+
+description_ja: "文書内のフォント・行間・余白などの版面情報を分析し、文書の出所や改ざんを推定するフォレンジックツール"
+description_en: "A web-based forensic tool that analyzes document fonts and layout patterns to infer their origin and detect tampering"
+
+category_ja:
+  - フォレンジック
+  - OSINT
+category_en:
+  - Forensics
+  - OSINT
+
+difficulty: 2
+
+tags:
+  - font
+  - forensic
+  - document
+  - osint
+  - ocr
+  - pdf
+  - layout-analysis
+
+repo_url: "https://github.com/ipusiron/fontorigin-analyzer"
+demo_url: "https://ipusiron.github.io/fontorigin-analyzer/"
+
+hub: true
 ---
 -->
 
@@ -21,7 +48,7 @@ demo: https://ipusiron.github.io/fontorigin-analyzer/
 
 **FontOrigin Analyzer** は、文書内のフォント・行間・余白・インデントなどの**版面情報（layout metrics）**を分析し、それらの癖（FontPrint）から文書の **出所（Origin）** や **一致性** を推定するツールです。
 
-フォレンジックやOSINTの用途で役立ちます。
+フォレンジックやOSINTの用途で役立つ（かもしれません）。
 
 ブラウザーのみで動作し、ファイルはローカルで解析されるため、プライバシーを保ったまま安全に試すことができます。
 
@@ -32,6 +59,8 @@ demo: https://ipusiron.github.io/fontorigin-analyzer/
 👉 **[https://ipusiron.github.io/fontorigin-analyzer/](https://ipusiron.github.io/fontorigin-analyzer/)**
 
 ブラウザーで直接お試しいただけます。
+
+※ツールとしてまだ微妙なので、将来的に改良する予定です。
 
 ---
 

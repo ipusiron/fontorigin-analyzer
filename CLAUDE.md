@@ -38,7 +38,7 @@ This tool is part of the "生成AIで作るセキュリティツール100" (100 
 - **DOCX**: Parse XML (`word/document.xml`, `word/styles.xml`) → extract style info → render placeholder preview
 - **TXT**: Virtual rendering on canvas → compute layout based on assumed font settings
 
-### Feature Extraction (script.js:306-331 `buildFeatures`)
+### Feature Extraction (script.js:805-831 `buildFeatures`)
 The `buildFeatures` function creates a FontPrint JSON with:
 - `font_candidates`: Guessed fonts based on glyph aspect ratio
 - `avg_font_size_px`: Median character height
@@ -48,14 +48,14 @@ The `buildFeatures` function creates a FontPrint JSON with:
 - `fingerprint_hash`: SHA-256 hash of normalized features
 - `vector`: Numeric feature vector for similarity comparison
 
-### Analysis Modes (script.js:106)
+### Analysis Modes (script.js:703)
 - **バランス** (balanced): Default OCR settings
 - **高速** (fast): Tesseract page segmentation mode 3
 - **高精度** (accurate): Tesseract page segmentation mode 6
 
 ## UI Design System
 
-### Theme System (style.css:2-14)
+### Theme System (style.css:21-61)
 - **CSS custom properties** for light/dark themes
 - Automatic OS preference detection (`prefers-color-scheme`)
 - Persistent storage in `localStorage('theme')`
@@ -90,14 +90,14 @@ python -m http.server 8000
 - Validate FontPrint JSON export/import
 
 ### Modifying Analysis Logic
-- OCR processing: `script.js:212-216`
-- Metrics computation: `script.js:218-242`
-- Font guessing heuristic: `script.js:278-288`
-- Feature normalization: `script.js:306-331`
+- OCR processing: `script.js:702-711`
+- Metrics computation: `script.js:723-737`
+- Font guessing heuristic: `script.js:300-309`
+- Feature normalization: `script.js:805-831`
 
 ## Key Implementation Notes
 
-### File Format Certainty Levels (script.js:336-345)
+### File Format Certainty Levels (script.js:836-845 `renderPills`)
 - **PDF/IMG**: 高 (high) - Most accurate, fixed layout
 - **DOCX**: 中 (medium) - XML-based but rendering may differ
 - **TXT**: 低 (low) - Virtual render, condition-dependent
@@ -106,13 +106,13 @@ python -m http.server 8000
 - `theme`: Current theme (`'light'` or `'dark'`)
 - `foa_corpus`: Array of saved FontPrint JSON objects
 
-### Tooltip System (script.js:50-88)
+### Tooltip System (script.js:154-206)
 - Portal rendering to document.body
 - Smart positioning with viewport flip
 - Hover and click triggers
 - ESC key to dismiss
 
-### Comparison Algorithm (script.js:443-448)
+### Comparison Algorithm (script.js:1182-1187)
 Cosine similarity between feature vectors:
 ```
 similarity = dot(v1,v2) / (||v1|| * ||v2||)
