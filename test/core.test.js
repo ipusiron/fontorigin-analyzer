@@ -107,6 +107,23 @@ test('sanitizeFontPrint neutralizes injected markup by forcing primitives', () =
   assert.equal('polluted' in clean, false);
 });
 
+test('cleanFontName strips the subset prefix', () => {
+  assert.equal(core.cleanFontName('ABCDEE+TimesNewRomanPSMT'), 'TimesNewRomanPSMT');
+  assert.equal(core.cleanFontName('XYZQWE+Arial-BoldMT'), 'Arial-BoldMT');
+  assert.equal(core.cleanFontName('Helvetica'), 'Helvetica');
+  assert.equal(core.cleanFontName('g_d0_f1'), 'g_d0_f1'); // unresolved id unchanged
+  assert.equal(core.cleanFontName(''), '');
+});
+
+test('fontCandidatesFromNames counts by frequency', () => {
+  const c = core.fontCandidatesFromNames(['ABCDEE+Arial', 'XYZQWE+Arial', 'Times']);
+  assert.equal(c[0].name, 'Arial');
+  assert.ok(Math.abs(c[0].score - 2 / 3) < 1e-9);
+  assert.equal(c[1].name, 'Times');
+  assert.equal(core.fontCandidatesFromNames([]).length, 0);
+  assert.equal(core.fontCandidatesFromNames([null, '']).length, 0);
+});
+
 test('corpusSummary is a safe primitive string', () => {
   assert.equal(core.corpusSummary({ features: { avg_font_size_px: 12, line_gap_px: 5 } }), 'font 12px / gap 5px');
   assert.equal(core.corpusSummary({ features: {} }), 'font –px / gap –px');

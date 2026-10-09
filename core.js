@@ -162,11 +162,42 @@
     return `font ${font}px / gap ${gap}px`;
   }
 
+  /**
+   * Strip the 6-letter subset prefix PDF embeds on subsetted fonts
+   * (e.g. "ABCDEE+TimesNewRomanPSMT" → "TimesNewRomanPSMT") and trim.
+   * Unresolved internal ids (e.g. "g_d0_f1") are returned unchanged.
+   */
+  function cleanFontName(name) {
+    if (typeof name !== 'string' || !name) return '';
+    return name.replace(/^[A-Z]{6}\+/, '').trim();
+  }
+
+  /**
+   * Build font candidates from a list of (real) font names by frequency.
+   * Returns up to 5 `{name, score}` sorted by score (count / total).
+   */
+  function fontCandidatesFromNames(names) {
+    const counts = new Map();
+    let total = 0;
+    for (const raw of (names || [])) {
+      const n = cleanFontName(raw);
+      if (!n) continue;
+      counts.set(n, (counts.get(n) || 0) + 1);
+      total++;
+    }
+    if (!total) return [];
+    return [...counts.entries()]
+      .map(([name, count]) => ({ name, score: count / total }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5);
+  }
+
   return Object.freeze({
     SOURCES,
     clamp, round1, median, diffs, clusterLines,
     pxToMm, ptToPx, ptToMm,
     guessFont, cosineSimilarity,
+    cleanFontName, fontCandidatesFromNames,
     sanitizeFontPrint, parseCorpus, corpusSummary
   });
 });

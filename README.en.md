@@ -67,10 +67,16 @@ Unlike generic metadata extractors (such as exiftool) or font-identification ser
 
 | Format | Confidence | How it is analyzed |
 |:--|:--|:--|
-| PDF / PNG / JPG | **High** | OCR (Tesseract.js). Fixed layout, most accurate. |
+| PDF / PNG / JPG | **High** | Electronic PDFs are read straight from the **text layer** (`pdf.js getTextContent()`) — exact font names, sizes and positions, no OCR. Scanned/image PDFs and images fall back to OCR (Tesseract.js). The layout summary shows which path was used. |
 | DOCX | **Medium** | Margins/fonts read from the XML. May differ from the real render. |
 | TXT | **Low** | Virtual rendering. No real layout info, so results depend on the environment. |
 | DOC | — | Not supported (binary). Convert to .docx or .pdf. |
+
+---
+
+## 🧪 Sample files
+
+Ready-to-try samples live in [`samples/`](samples/) (all fictional, no personal data): two text PDFs that differ only in font (`letter-helvetica.pdf` / `letter-times.pdf`), one with a wider margin, a scan-style PNG for the OCR path, a DOCX, and a TXT. See [samples/README.md](samples/README.md).
 
 ---
 

@@ -290,6 +290,91 @@ function renderDocxPreview(ctx, canvas, parsed, w = 900) {
   ctx.fillText(`DOCX: 余白 上${margin.top.toFixed(1)} 下${margin.bottom.toFixed(1)} 左${margin.left.toFixed(1)} 右${margin.right.toFixed(1)}pt / 文字${sizePt.toFixed(1)}pt`, 12, 20);
 }
 
+/**
+ * Try to read a PDF page's text layer directly (no OCR).
+ * Electronic PDFs carry positioned glyph runs with real font names, which are
+ * far more accurate than OCR. Returns a normalized feature bundle, or null when
+ * there is no usable text layer (scanned / image-only PDF → caller falls to OCR).
+ * The page must already have been rendered once so `commonObjs` holds the fonts.
+ */
+async function extractPdfTextFeatures(page) {
+  const vp = page.getViewport({ scale: 1 }); // 1 unit = 1pt, top-left origin
+  const tc = await page.getTextContent();
+  const items = (tc.items || []).filter(it => it.str && it.str.trim());
+  // Judge by character count, not item count: a scanned/image PDF has ~0 chars,
+  // while even a short electronic PDF has a handful.
+  const totalChars = items.reduce((a, it) => a + it.str.trim().length, 0);
+  if (!items.length || totalChars < 6) return null; // no usable text layer → OCR
+
+  const baselines = [], fontHeights = [], aspects = [], fontNames = [], glyphs = [];
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (const it of items) {
+    const m = pdfjsLib.Util.transform(vp.transform, it.transform);
+    const x = m[4], y = m[5];              // top-left coords (pt)
+    const fh = Math.hypot(m[2], m[3]);     // glyph height (pt)
+    const w = it.width || 0;               // advance width (pt)
+    if (fh <= 0) continue;
+    baselines.push(y);
+    fontHeights.push(fh);
+    aspects.push((w / Math.max(1, it.str.length)) / fh); // per-character aspect
+    if (it.fontName) fontNames.push(it.fontName);
+    minX = Math.min(minX, x); maxX = Math.max(maxX, x + w);
+    minY = Math.min(minY, y - fh); maxY = Math.max(maxY, y);
+    glyphs.push({ str: it.str, xPt: x, yPt: y - fh, wPt: w, hPt: fh });
+  }
+  if (!fontHeights.length) return null;
+
+  // Resolve internal font ids (e.g. g_d0_f1) to real names via commonObjs.
+  const realNames = fontNames.map(fn => {
+    try { const o = page.commonObjs.get(fn); return (o && o.name) ? o.name : fn; }
+    catch (e) { return fn; }
+  });
+
+  const pageWPt = vp.width, pageHPt = vp.height;
+  const fontSizePt = Core.median(fontHeights);
+  const lineGapPt = Core.median(Core.diffs(Core.clusterLines(baselines)).filter(d => d > 1));
+  const marginsMM = {
+    left: Core.ptToMm(minX), right: Core.ptToMm(pageWPt - maxX),
+    top: Core.ptToMm(minY), bottom: Core.ptToMm(pageHPt - maxY)
+  };
+  const candidates = Core.fontCandidatesFromNames(realNames);
+  const fontLean = Core.guessFont(Core.median(aspects));
+  return {
+    pageWPt, pageHPt, fontSizePt, lineGapPt, marginsMM, candidates, fontLean, glyphs,
+    vecPx: [
+      Core.ptToPx(fontSizePt), Core.ptToPx(lineGapPt),
+      Core.ptToPx(minX), Core.ptToPx(pageWPt - maxX), Core.ptToPx(minY), Core.ptToPx(pageHPt - maxY)
+    ]
+  };
+}
+
+/** Crop representative glyph thumbnails from the rendered PDF canvas using the
+ *  text-layer positions (points → canvas px). Mirrors sampleGlyphs() output. */
+function cropGlyphsFromText(cnv, glyphs, pageWPt) {
+  const target = ['a', 'e', 'g', '1', 'l', '"', '‘', '’', '“', '”'];
+  const scale = cnv.width / pageWPt;
+  const out = [];
+  for (const g of glyphs) {
+    const s = (g.str || '').trim();
+    const idx = [...s].findIndex(ch => target.includes(ch));
+    if (idx < 0) continue;
+    const padPt = Math.max(1, g.hPt * 0.12);
+    const sx = Math.max(0, (g.xPt - padPt) * scale), sy = Math.max(0, (g.yPt - padPt) * scale);
+    const sw = Math.min(cnv.width - sx, (g.wPt + padPt * 2) * scale);
+    const sh = Math.min(cnv.height - sy, (g.hPt + padPt * 2) * scale);
+    if (sw <= 1 || sh <= 1) continue;
+    const size = 72;
+    const tc = document.createElement('canvas'); tc.width = size; tc.height = size;
+    const tctx = tc.getContext('2d');
+    tctx.fillStyle = '#ffffff'; tctx.fillRect(0, 0, size, size);
+    const sc = Math.min(size / sw, size / sh), dw = sw * sc, dh = sh * sc;
+    try { tctx.drawImage(cnv, sx, sy, sw, sh, (size - dw) / 2, (size - dh) / 2, dw, dh); } catch (e) { continue; }
+    out.push({ glyph: s[idx], box: [g.xPt, g.yPt, g.wPt, g.hPt], thumb: tc.toDataURL('image/png') });
+    if (out.length >= 18) break;
+  }
+  return out;
+}
+
 /* ===== Analyze tab ===== */
 (function () {
   const fileInput = document.getElementById('fileAnalyze');
@@ -390,13 +475,14 @@ function renderDocxPreview(ctx, canvas, parsed, w = 900) {
     const ext = extOf(currentFile);
     document.getElementById('sourceType').textContent = ext.toUpperCase();
 
-    let imgBitmap = null;
+    let imgBitmap = null, pdfPage = null;
     if (ext === 'pdf') {
       if (typeof pdfjsLib === 'undefined') { showToast(t('toastPdfMissing'), 'error'); spinner.classList.add('hidden'); prog.textContent = ''; return; }
       prog.textContent = t('pdfLoading');
       const ab = await readFileAsArrayBuffer(currentFile);
       const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
       const page = await pdf.getPage(1);
+      pdfPage = page;
       const viewport = page.getViewport({ scale: 1.5 });
       const tmp = document.createElement('canvas'); tmp.width = viewport.width; tmp.height = viewport.height;
       await page.render({ canvasContext: tmp.getContext('2d'), viewport }).promise;
@@ -446,9 +532,31 @@ function renderDocxPreview(ctx, canvas, parsed, w = 900) {
       return;
     }
 
-    // PDF / image: draw preview then OCR.
+    // PDF / image: draw preview.
     resizeCanvasToBitmap(canvas, imgBitmap);
     ctx.drawImage(imgBitmap, 0, 0, canvas.width, canvas.height);
+
+    // Prefer the PDF text layer (electronic PDFs) over OCR — far more accurate,
+    // and it yields real font names. Fall back to OCR for scanned/image PDFs.
+    if (ext === 'pdf' && pdfPage) {
+      try {
+        const tf = await extractPdfTextFeatures(pdfPage);
+        if (tf) {
+          const glyphSigs = cropGlyphsFromText(canvas, tf.glyphs, tf.pageWPt);
+          lastFeatures = await buildFeatures({
+            source: 'PDF/IMG',
+            fontCandidates: tf.candidates.length ? tf.candidates : tf.fontLean.candidates,
+            fontLean: tf.fontLean,
+            fontSizePx: Core.ptToPx(tf.fontSizePt), lineGapPx: Core.ptToPx(tf.lineGapPt),
+            kerningSig: 'pdf-text', marginsMM: tf.marginsMM, glyphSigs,
+            layoutVec: tf.vecPx, extras: { method: 'text-layer' }
+          });
+          spinner.classList.add('hidden'); prog.textContent = t('done');
+          return;
+        }
+      } catch (e) { warn('[PDF text layer] falling back to OCR:', e); }
+    }
+
     prog.textContent = t('ocrPrep');
 
     try {
@@ -481,7 +589,8 @@ function renderDocxPreview(ctx, canvas, parsed, w = 900) {
         fontSizePx, lineGapPx, kerningSig: 'approx',
         marginsMM: { left: Core.pxToMm(leftMarginPx), right: Core.pxToMm(rightMarginPx), top: Core.pxToMm(topMarginPx), bottom: Core.pxToMm(bottomMarginPx) },
         glyphSigs: sampleGlyphs(canvas, words),
-        layoutVec: [fontSizePx, lineGapPx, leftMarginPx, rightMarginPx, topMarginPx, bottomMarginPx]
+        layoutVec: [fontSizePx, lineGapPx, leftMarginPx, rightMarginPx, topMarginPx, bottomMarginPx],
+        extras: { method: 'ocr' }
       });
       spinner.classList.add('hidden'); prog.textContent = t('done');
     } catch (error) {
@@ -608,6 +717,7 @@ function renderDocxPreview(ctx, canvas, parsed, w = 900) {
     }
     const lean = leanLabel(fontLean || L.font_lean);
     if (lean) items.push(lean);
+    if (f.extras?.method) items.push(t('labelMethod', { method: t(f.extras.method === 'text-layer' ? 'methodTextLayer' : 'methodOcr') }));
     if (!items.length) items.push(t('noData'));
     items.forEach(text => { const li = document.createElement('li'); li.textContent = text; ul.appendChild(li); });
   }
@@ -777,13 +887,14 @@ function renderDocxPreview(ctx, canvas, parsed, w = 900) {
   async function loadPreview(file, canvas, ctx) {
     const ext = extOf(file);
     if (!ALLOWED_EXT.includes(ext)) throw new Error(t('toastUnsupported'));
-    let imgBitmap = null;
+    let imgBitmap = null, pdfPage = null;
 
     if (ext === 'pdf') {
       if (typeof pdfjsLib === 'undefined') throw new Error(t('toastPdfMissing'));
       const ab = await readFileAsArrayBuffer(file);
       const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
       const page = await pdf.getPage(1);
+      pdfPage = page;
       const viewport = page.getViewport({ scale: 1.5 });
       const tmp = document.createElement('canvas'); tmp.width = viewport.width; tmp.height = viewport.height;
       await page.render({ canvasContext: tmp.getContext('2d'), viewport }).promise;
@@ -799,6 +910,23 @@ function renderDocxPreview(ctx, canvas, parsed, w = 900) {
       canvas.width = Math.round(imgBitmap.width * scale);
       canvas.height = Math.round(imgBitmap.height * scale);
       ctx.drawImage(imgBitmap, 0, 0, canvas.width, canvas.height);
+
+      // Prefer the PDF text layer over OCR for comparison, too.
+      if (ext === 'pdf' && pdfPage) {
+        try {
+          const tf = await extractPdfTextFeatures(pdfPage);
+          if (tf) return {
+            source: 'PDF/IMG', vector: tf.vecPx,
+            features: {
+              font_candidates: tf.candidates.length ? tf.candidates : tf.fontLean.candidates,
+              avg_font_size_px: Core.round1(Core.ptToPx(tf.fontSizePt)),
+              line_gap_px: Core.round1(Core.ptToPx(tf.lineGapPt)),
+              margin_mm: tf.marginsMM
+            }
+          };
+        } catch (e) { warn('[Compare PDF text layer] falling back to OCR:', e); }
+      }
+
       const ocr = await Tesseract.recognize(canvas, 'eng+jpn', { tessedit_pageseg_mode: 6, logger: () => {} });
       const words = ocr.data.words?.filter(w => w.text?.trim()) || [];
       if (words.length === 0) return { source: 'PDF/IMG', vector: [canvas.width, canvas.height], features: {} };

@@ -1,0 +1,10 @@
+FontOrigin Analyzer - sample notes
+
+This is a plain text file. TXT has no layout information,
+so the tool renders it virtually and reports a "low" confidence.
+
+Use it to see how the Analyze tab behaves with text-only input,
+and how the Compare tab treats content-derived approximations.
+
+The quick brown fox jumps over the lazy dog.
+Pack my box with five dozen liquor jugs.

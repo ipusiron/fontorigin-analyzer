@@ -37,7 +37,8 @@ This tool is part of the "生成AIで作るセキュリティツール100" (100 
 ## Data Flow & Analysis Pipeline
 
 ### File Processing by Type
-- **PDF/Images**: OCR with Tesseract → extract word bounding boxes → compute metrics
+- **PDF**: read the text layer first via `pdf.js getTextContent()` (real font names, exact pt positions); fall back to OCR only for scanned/image PDFs with no text layer.
+- **Images**: OCR with Tesseract → extract word bounding boxes → compute metrics
 - **DOCX**: Parse XML (`word/document.xml`, `word/styles.xml`) → extract style info → render placeholder preview
 - **TXT**: Virtual rendering on canvas → compute layout based on assumed font settings
 

@@ -153,26 +153,26 @@ pt → mm: × 0.3528
 
 ## ファイル形式別の処理パイプライン
 
-### PDF/画像 → OCR解析
+### PDF → テキストレイヤー直読（OCRは画像PDFのフォールバック）
+
+PDFはまず**テキストレイヤー**を直読する。電子PDFなら実フォント名・字サイズ・座標が正確に取れ、OCRの誤認を避けられる。テキストレイヤーが無い（スキャン/画像）PDFだけOCRに回す。判定は文字数（`totalChars < 6` ならOCR）。
 
 ```
-┌──────────┐    ┌──────────┐    ┌──────────────┐    ┌──────────────┐
-│  File    │───▶│ Canvas   │───▶│ Tesseract.js │───▶│ Word Bboxes  │
-│ (binary) │    │ Render   │    │ (OCR)        │    │ {x,y,w,h}    │
-└──────────┘    └──────────┘    └──────────────┘    └──────────────┘
-                                                              │
-                                                              ▼
-┌──────────────────────────────────────────────────────────────────┐
-│ Feature Extraction                                               │
-├──────────────────────────────────────────────────────────────────┤
-│ 1. Font Size:   median(bbox heights)                           │
-│ 2. Line Gap:    median(line spacing differences)                │
-│ 3. Margins:     min(bbox.x), max(bbox.x+w) from canvas edges   │
-│ 4. Aspect:      avg(width/height) for font guessing            │
-└──────────────────────────────────────────────────────────────────┘
+┌──────────┐    ┌───────────────────────┐    ┌──────────────────────────┐
+│  PDF     │───▶│ page.getTextContent()  │─┬─▶│ text items (pt座標)       │
+│          │    │  + commonObjs(font名)  │ │  │ → 実フォント名/字サイズ    │
+└──────────┘    └───────────────────────┘ │  └──────────────────────────┘
+                   テキスト層なし ──────────┘            │（extractPdfTextFeatures）
+                        ▼                                ▼
+┌──────────┐    ┌──────────────┐    ┌──────────────┐
+│ Canvas   │───▶│ Tesseract.js │───▶│ Word Bboxes  │  ← スキャン/画像PDF・画像
+│ Render   │    │ (OCR)        │    │ {x,y,w,h}    │
+└──────────┘    └──────────────┘    └──────────────┘
 ```
 
-**コード実装:** `script.js:274-393` (analyze tab)
+**特徴抽出（共通）**: フォント高＝median、行間＝median(クラスタ化した行の差分)、余白＝ページ端との差（テキスト層はpt→mm、OCRはpx→mm）、字形傾向＝横幅比。テキスト層ではフォント名を頻度で候補化（`core.js` の `fontCandidatesFromNames`）。
+
+**コード実装:** `extractPdfTextFeatures()` / `analyzeNow()`（analyzeタブ）, OCR経路は同関数内のフォールバック。
 
 ### DOCX → XML解析
 
