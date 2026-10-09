@@ -171,7 +171,12 @@
       diffFontHeight: 'フォント高(±px)',
       diffLineGap: '行間(±px)',
       diffNone: '（なし）',
-      txtCompareNote: 'TXTは版面情報を持たないため、内容由来の近似値で比較しています。'
+      diffMargin: '余白差(平均±mm)',
+      txtCompareNote: 'TXTは版面情報を持たないため、内容由来の近似値で比較しています。',
+      cmpCrossNote: '種別が異なります（{a} ↔ {b}）。共通の特徴だけで比較しています。',
+      cmpTxtMismatch: 'TXTは他の形式と比較できません（版面情報を持たないため）。',
+      cmpInsufficient: '共通して比較できる特徴が足りません。',
+      cmpNotComparable: '比較できません'
     },
 
     en: {
@@ -331,7 +336,12 @@
       diffFontHeight: 'Font height (±px)',
       diffLineGap: 'Line gap (±px)',
       diffNone: '(none)',
-      txtCompareNote: 'TXT has no layout info, so the comparison uses content-derived approximations.'
+      diffMargin: 'Margin diff (avg ±mm)',
+      txtCompareNote: 'TXT has no layout info, so the comparison uses content-derived approximations.',
+      cmpCrossNote: 'Different types ({a} ↔ {b}); compared on shared features only.',
+      cmpTxtMismatch: 'TXT cannot be compared with other formats (it has no layout info).',
+      cmpInsufficient: 'Not enough shared features to compare.',
+      cmpNotComparable: 'Not comparable'
     }
   };
 

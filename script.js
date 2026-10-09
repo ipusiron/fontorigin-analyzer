@@ -240,6 +240,15 @@ function wrapTextCJK(context, text, maxWidth) {
 async function parseDocx(ab) {
   const zip = await JSZip.loadAsync(ab);
   const docXml = await zip.file('word/document.xml')?.async('text') || '';
+  const stylesXml = await zip.file('word/styles.xml')?.async('text') || '';
+  // Real font names from <w:rFonts w:ascii="..." w:eastAsia="..."> (B).
+  const fontNames = [];
+  for (const xml of [docXml, stylesXml]) {
+    for (const m of xml.matchAll(/<w:rFonts\b[^>]*>/g)) {
+      const asc = /w:ascii="([^"]+)"/.exec(m[0]); if (asc) fontNames.push(asc[1]);
+      const ea = /w:eastAsia="([^"]+)"/.exec(m[0]); if (ea) fontNames.push(ea[1]);
+    }
+  }
   const sectPr = /<w:sectPr[\s\S]*?<\/w:sectPr>/.exec(docXml)?.[0] || '';
   const num = re => Number(re.exec(sectPr)?.[1] || 0) / 20; // twips → pt
   const margin = {
@@ -255,7 +264,7 @@ async function parseDocx(ab) {
     const paraText = [...pMatch[0].matchAll(/<w:t[^>]*>(.*?)<\/w:t>/g)].map(m => m[1]).join('');
     if (paraText.trim()) bodyLines.push(paraText.trim());
   });
-  return { margin, sizePt, bodyLines };
+  return { margin, sizePt, bodyLines, fontNames };
 }
 
 /** Render a DOCX first-page preview with margin guide onto ctx/canvas. */
@@ -498,8 +507,9 @@ function cropGlyphsFromText(cnv, glyphs, pageWPt) {
       renderDocxPreview(ctx, canvas, parsed, 900);
       const { margin, sizePt } = parsed;
       const marginMM = { top: Core.ptToMm(margin.top), bottom: Core.ptToMm(margin.bottom), left: Core.ptToMm(margin.left), right: Core.ptToMm(margin.right) };
+      const docxCands = Core.fontCandidatesFromNames(parsed.fontNames);
       lastFeatures = await buildFeatures({
-        source: 'DOCX', fontCandidates: [{ name: '(docx-styles)', score: 1 }], fontLean: null,
+        source: 'DOCX', fontCandidates: docxCands.length ? docxCands : [{ name: '(docx-styles)', score: 1 }], fontLean: null,
         fontSizePx: Core.ptToPx(sizePt), lineGapPx: Core.ptToPx(sizePt) * 0.5, kerningSig: 'docx-xml',
         marginsMM: marginMM, glyphSigs: [],
         layoutVec: [sizePt, margin.top, margin.bottom, margin.left, margin.right],
@@ -856,8 +866,7 @@ function cropGlyphsFromText(cnv, glyphs, pageWPt) {
     spinner.classList.remove('hidden');
     prog.textContent = t('progComparing');
     try {
-      const score = Core.cosineSimilarity(featL.vector || [], featR.vector || []);
-      lastCompare = { score, lf: featL.features || {}, rf: featR.features || {}, txt: featL.source === 'TXT' || featR.source === 'TXT' };
+      lastCompare = { a: featL, b: featR };
       renderCompare();
       spinner.classList.add('hidden'); prog.textContent = t('compareDone');
     } catch (error) {
@@ -871,18 +880,29 @@ function cropGlyphsFromText(cnv, glyphs, pageWPt) {
 
   function renderCompare() {
     if (!lastCompare) return;
+    const { a, b } = lastCompare;
+    const r = Core.compareEntries(a, b);
     const list = document.getElementById('diffList'); list.replaceChildren();
     const add = (name, v) => { const li = document.createElement('li'); li.textContent = `${name}：${v}`; list.appendChild(li); };
-    const { lf, rf, score, txt } = lastCompare;
-    add(t('diffFont'), overlap(lf.font_candidates, rf.font_candidates));
-    add(t('diffFontHeight'), delta(lf.avg_font_size_px, rf.avg_font_size_px));
-    add(t('diffLineGap'), delta(lf.line_gap_px, rf.line_gap_px));
-    if (txt) { const li = document.createElement('li'); li.className = 'diff-note'; li.textContent = t('txtCompareNote'); list.appendChild(li); }
-    document.getElementById('scoreBlock').textContent = (score * 100).toFixed(1) + '%';
-  }
+    const note = (text) => { const li = document.createElement('li'); li.className = 'diff-note'; li.textContent = text; list.appendChild(li); };
 
-  function delta(a, b) { if (a == null || b == null) return '–'; return (Math.round((a - b) * 10) / 10).toString(); }
-  function overlap(a = [], b = []) { const A = (a || []).map(x => x.name), B = (b || []).map(x => x.name); return A.filter(x => B.includes(x)).slice(0, 3).join(', ') || t('diffNone'); }
+    if (!r.comparable) {
+      add(t('cmpNotComparable'), '–');
+      note(r.reason === 'txt-mismatch' ? t('cmpTxtMismatch') : t('cmpInsufficient'));
+      document.getElementById('scoreBlock').textContent = '–';
+      return;
+    }
+
+    const bd = r.breakdown || {};
+    const overlapNames = (bd.fontOverlap || []).slice(0, 3).join(', ') || t('diffNone');
+    add(t('diffFont'), overlapNames);
+    add(t('diffFontHeight'), bd.fontDelta == null ? '–' : String(bd.fontDelta));
+    add(t('diffLineGap'), bd.gapDelta == null ? '–' : String(bd.gapDelta));
+    add(t('diffMargin'), bd.marginDelta == null ? '–' : String(bd.marginDelta));
+    if (!r.sameSource) note(t('cmpCrossNote', { a: a.source, b: b.source }));
+    if (r.kind === 'txt') note(t('txtCompareNote'));
+    document.getElementById('scoreBlock').textContent = (r.score * 100).toFixed(1) + '%';
+  }
 
   async function loadPreview(file, canvas, ctx) {
     const ext = extOf(file);
@@ -953,10 +973,20 @@ function cropGlyphsFromText(cnv, glyphs, pageWPt) {
       const ab = await readFileAsArrayBuffer(file);
       const parsed = await parseDocx(ab);
       renderDocxPreview(ctx, canvas, parsed, 640);
-      const { margin } = parsed;
+      const { margin, sizePt } = parsed;
       // Convert pt → mm so it lines up with the analyze tab's margin_mm (was mislabelled pt before).
       const marginMM = { top: Core.ptToMm(margin.top), bottom: Core.ptToMm(margin.bottom), left: Core.ptToMm(margin.left), right: Core.ptToMm(margin.right) };
-      return { source: 'DOCX', vector: [marginMM.top, marginMM.bottom, marginMM.left, marginMM.right], features: { margin_mm: marginMM } };
+      const docxCands = Core.fontCandidatesFromNames(parsed.fontNames);
+      return {
+        source: 'DOCX',
+        vector: [Core.ptToPx(sizePt), Core.ptToPx(sizePt) * 0.5, marginMM.top, marginMM.bottom, marginMM.left, marginMM.right],
+        features: {
+          font_candidates: docxCands.length ? docxCands : [{ name: '(docx-styles)', score: 1 }],
+          avg_font_size_px: Core.round1(Core.ptToPx(sizePt)),
+          line_gap_px: Core.round1(Core.ptToPx(sizePt) * 0.5),
+          margin_mm: marginMM
+        }
+      };
     }
 
     if (ext === 'txt') {

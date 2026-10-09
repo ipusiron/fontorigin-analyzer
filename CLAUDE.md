@@ -114,11 +114,12 @@ python -m http.server 8000
 - Hover and click triggers
 - ESC key to dismiss
 
-### Comparison Algorithm (script.js:1182-1187)
-Cosine similarity between feature vectors:
-```
-similarity = dot(v1,v2) / (||v1|| * ||v2||)
-```
+### Comparison Algorithm (core.js `compareEntries`)
+Normalized distance over the physical features both documents share (font height
+/50px, line gap /80px, margins /50mm), then `score = clamp(1 - dist, 0, 1)`.
+Only same-source pairs for TXT; PDF/IMG↔DOCX compare on shared features. This
+replaced the old raw cosine over mismatched-scale vectors (which margins
+dominated). A breakdown (font overlap, height/gap/margin deltas) is shown.
 
 ## Privacy & Security Considerations
 

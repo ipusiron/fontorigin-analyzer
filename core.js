@@ -154,6 +154,74 @@
     return { ok: true, list, error: null };
   }
 
+  /* --- comparison ---------------------------------------------------------
+   * The old compare was a raw cosine over layout vectors whose dimensions had
+   * wildly different magnitudes (margins in the hundreds of px vs font height
+   * in the tens), so margins dominated the score; and it compared vectors of
+   * different lengths across sources, which is meaningless. compareEntries
+   * normalizes each physical dimension to a common scale, only uses dimensions
+   * both documents provide, and refuses incomparable pairs. */
+  const NORM = Object.freeze({ fontPx: 50, gapPx: 80, marginMm: 50, txtLines: 200, txtWidth: 900 });
+
+  function distScore(dims) {
+    let sum = 0;
+    for (const [x, y, n] of dims) { const d = (x - y) / n; sum += d * d; }
+    return clamp(1 - Math.sqrt(sum / dims.length), 0, 1);
+  }
+  function marginAvgDelta(a = {}, b = {}) {
+    const keys = ['top', 'bottom', 'left', 'right'].filter(k => Number.isFinite(a[k]) && Number.isFinite(b[k]));
+    if (!keys.length) return null;
+    return round1(keys.reduce((s, k) => s + Math.abs(a[k] - b[k]), 0) / keys.length);
+  }
+  function overlapNames(a, b) {
+    const A = (a || []).map(x => x && x.name).filter(Boolean);
+    const B = new Set((b || []).map(x => x && x.name).filter(Boolean));
+    return A.filter(x => B.has(x));
+  }
+
+  /**
+   * Compare two corpus entries ({source, vector, features}).
+   * Returns { comparable, sameSource, score (0..1 or null), breakdown, reason }.
+   * - TXT only compares against TXT (content-derived vector); TXT vs others is
+   *   refused. PDF/IMG and DOCX compare on their shared physical features.
+   */
+  function compareEntries(a, b) {
+    a = a || {}; b = b || {};
+    const sameSource = a.source === b.source;
+
+    if (a.source === 'TXT' || b.source === 'TXT') {
+      if (a.source === 'TXT' && b.source === 'TXT') {
+        const va = a.vector || [], vb = b.vector || [];
+        const dims = [[va[0], vb[0], NORM.fontPx], [va[1], vb[1], NORM.txtLines], [va[2], vb[2], NORM.txtWidth]]
+          .filter(d => Number.isFinite(d[0]) && Number.isFinite(d[1]));
+        if (dims.length < 2) return { comparable: false, sameSource, score: null, breakdown: {}, reason: 'insufficient' };
+        return { comparable: true, sameSource, score: distScore(dims), breakdown: {}, kind: 'txt' };
+      }
+      return { comparable: false, sameSource, score: null, breakdown: {}, reason: 'txt-mismatch' };
+    }
+
+    const fa = a.features || {}, fb = b.features || {};
+    const ma = fa.margin_mm || {}, mb = fb.margin_mm || {};
+    const n = v => (Number.isFinite(v) ? v : null);
+    const dims = [
+      [n(fa.avg_font_size_px), n(fb.avg_font_size_px), NORM.fontPx],
+      [n(fa.line_gap_px), n(fb.line_gap_px), NORM.gapPx],
+      [n(ma.top), n(mb.top), NORM.marginMm],
+      [n(ma.bottom), n(mb.bottom), NORM.marginMm],
+      [n(ma.left), n(mb.left), NORM.marginMm],
+      [n(ma.right), n(mb.right), NORM.marginMm]
+    ].filter(d => d[0] != null && d[1] != null);
+    if (dims.length < 2) return { comparable: false, sameSource, score: null, breakdown: {}, reason: 'insufficient' };
+
+    const breakdown = {
+      fontDelta: (fa.avg_font_size_px != null && fb.avg_font_size_px != null) ? round1(fa.avg_font_size_px - fb.avg_font_size_px) : null,
+      gapDelta: (fa.line_gap_px != null && fb.line_gap_px != null) ? round1(fa.line_gap_px - fb.line_gap_px) : null,
+      marginDelta: marginAvgDelta(ma, mb),
+      fontOverlap: overlapNames(fa.font_candidates, fb.font_candidates)
+    };
+    return { comparable: true, sameSource, score: distScore(dims), breakdown };
+  }
+
   /** One-line summary used in the corpus table (safe primitive string). */
   function corpusSummary(entry) {
     const f = (entry && entry.features) || {};
@@ -196,7 +264,7 @@
     SOURCES,
     clamp, round1, median, diffs, clusterLines,
     pxToMm, ptToPx, ptToMm,
-    guessFont, cosineSimilarity,
+    guessFont, cosineSimilarity, compareEntries,
     cleanFontName, fontCandidatesFromNames,
     sanitizeFontPrint, parseCorpus, corpusSummary
   });

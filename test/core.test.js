@@ -124,6 +124,52 @@ test('fontCandidatesFromNames counts by frequency', () => {
   assert.equal(core.fontCandidatesFromNames([null, '']).length, 0);
 });
 
+test('compareEntries: identical PDF features score 1', () => {
+  const e = { source: 'PDF/IMG', features: { avg_font_size_px: 20, line_gap_px: 30, margin_mm: { top: 25, bottom: 25, left: 20, right: 20 }, font_candidates: [{ name: 'Helvetica', score: 1 }] } };
+  const r = core.compareEntries(e, JSON.parse(JSON.stringify(e)));
+  assert.equal(r.comparable, true);
+  assert.equal(r.sameSource, true);
+  assert.equal(r.score, 1);
+  assert.deepEqual(r.breakdown.fontOverlap, ['Helvetica']);
+  assert.equal(r.breakdown.marginDelta, 0);
+});
+
+test('compareEntries: margins no longer dominate font difference', () => {
+  // Same margins, very different font height -> score must drop well below 1.
+  const a = { source: 'PDF/IMG', features: { avg_font_size_px: 12, line_gap_px: 18, margin_mm: { top: 25, bottom: 25, left: 20, right: 20 } } };
+  const b = { source: 'PDF/IMG', features: { avg_font_size_px: 40, line_gap_px: 60, margin_mm: { top: 25, bottom: 25, left: 20, right: 20 } } };
+  const r = core.compareEntries(a, b);
+  assert.ok(r.score < 0.9, 'font/gap difference should move the score, got ' + r.score);
+  assert.equal(r.breakdown.fontDelta, -28);
+});
+
+test('compareEntries: PDF vs DOCX is comparable on shared features', () => {
+  const pdf = { source: 'PDF/IMG', features: { avg_font_size_px: 15, line_gap_px: 20, margin_mm: { top: 25, bottom: 25, left: 20, right: 20 } } };
+  const docx = { source: 'DOCX', features: { avg_font_size_px: 15, line_gap_px: 20, margin_mm: { top: 25, bottom: 25, left: 20, right: 20 } } };
+  const r = core.compareEntries(pdf, docx);
+  assert.equal(r.comparable, true);
+  assert.equal(r.sameSource, false);
+  assert.equal(r.score, 1);
+});
+
+test('compareEntries: TXT only compares with TXT', () => {
+  const txt = { source: 'TXT', vector: [17, 10, 400], features: {} };
+  const pdf = { source: 'PDF/IMG', features: { avg_font_size_px: 15, line_gap_px: 20, margin_mm: { top: 25, left: 20 } } };
+  assert.equal(core.compareEntries(txt, pdf).comparable, false);
+  assert.equal(core.compareEntries(txt, pdf).reason, 'txt-mismatch');
+  const r = core.compareEntries(txt, { source: 'TXT', vector: [17, 25, 560], features: {} });
+  assert.equal(r.comparable, true);
+  assert.ok(r.score < 1 && r.score > 0);
+});
+
+test('compareEntries: refuses when too few shared dimensions', () => {
+  const a = { source: 'PDF/IMG', features: { avg_font_size_px: 15 } };
+  const b = { source: 'DOCX', features: { margin_mm: { top: 25 } } };
+  const r = core.compareEntries(a, b);
+  assert.equal(r.comparable, false);
+  assert.equal(r.reason, 'insufficient');
+});
+
 test('corpusSummary is a safe primitive string', () => {
   assert.equal(core.corpusSummary({ features: { avg_font_size_px: 12, line_gap_px: 5 } }), 'font 12px / gap 5px');
   assert.equal(core.corpusSummary({ features: {} }), 'font –px / gap –px');
