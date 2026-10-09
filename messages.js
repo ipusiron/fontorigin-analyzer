@@ -1,0 +1,333 @@
+/**
+ * ===== FontOrigin Analyzer - i18n messages =====
+ *
+ * UMD module. `window.FontOriginMessages[lang][key]` returns a string.
+ * `{name}` placeholders are filled by the caller (see `t()` in script.js).
+ */
+(function (root, factory) {
+  'use strict';
+  const api = factory();
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  else root.FontOriginMessages = api;
+})(typeof globalThis === 'object' ? globalThis : this, function () {
+  'use strict';
+
+  const messages = {
+    ja: {
+      languageSwitch: 'English',
+      pageTitle: 'FontOrigin Analyzer - 文書出所解析ツール',
+      metaDescription: 'フォントや版面の特徴から文書の出所を推定するフォレンジックツール',
+      tagline: 'フォントと版面の特徴から文書の出所を推定するフォレンジックツール',
+      themeToDark: 'ダークモードに切り替え',
+      themeToLight: 'ライトモードに切り替え',
+      themeTitle: 'テーマ切り替え',
+      help: 'ヘルプ',
+
+      tabAnalyze: '解析',
+      tabCompare: '比較',
+      tabCorpus: 'コーパス',
+      tabGuide: 'ガイド',
+
+      analyzeDesc: '文書ファイルをアップロードし、フォント・余白・行間などの版面特徴を抽出。文書の出所推定や改ざん検知に活用できるFontPrint（指紋）を生成します。',
+      analyzeCard: 'ファイルを解析',
+      dropHintAnalyze: 'ここにPDF/PNG/JPG/DOCX/TXTをドロップ（またはクリックして選択）',
+      dropSubAnalyze: 'TXTは仮想レンダリング、DOCXはXML解析、PDF/画像はOCRでレイアウト解析を行います。',
+      modeLabel: 'モード',
+      modeBalanced: 'バランス',
+      modeFast: '高速',
+      modeAccurate: '高精度',
+      tipMode: '高速：OCRの精度より速度優先。<br>高精度：文字ボックス精度と正規化を強化。<br>バランス：中間設定。',
+      btnAnalyze: '解析する',
+      previewTitle: 'プレビュー',
+      emptyState: 'ファイルを選択すると<br>プレビューが表示されます',
+
+      resultSummary: '結果サマリー',
+      certainty: '確からしさ',
+      tipCertainty: '解析結果の信頼性レベルです。<br><strong>高</strong>（PDF/画像）は版面が固定されており最も正確。<br><strong>中</strong>（DOCX）はXML定義ベースで実レンダーと差異あり。<br><strong>低</strong>（TXT）は仮想レンダリングで条件依存です。',
+      fontCandidates: 'フォント候補',
+      layoutSummary: 'レイアウト要約',
+      detailTitle: '詳細・可視化',
+      accLineGap: '行間・字間分布',
+      tipLineGap: '文書内の行間や文字間隔の分布を可視化します。<br>一定のパターンがあれば特定のテンプレートや作成ツールを示唆します。',
+      accMargin: '余白ヒートマップ',
+      tipMargin: '文書の上下左右の余白を視覚化します。<br>余白比率は組織やテンプレート固有の特徴となり、出所推定の重要な手がかりになります。',
+      accGlyph: '代表グリフ比較',
+      tipGlyph: 'OCRの境界ボックスから代表文字（a,e,g,1,l,"）の実画像を切り出して表示します。',
+      jsonTitle: 'FontPrint JSON',
+      tipJson: '解析特徴を正規化し、類似検索や比較に利用できるJSON形式です（個人情報は含みません）。',
+      btnCopy: 'コピー',
+      btnSaveCorpus: 'コーパスに保存',
+
+      compareDesc: '2つの文書のフォント・余白・行間などの特徴を比較し、同一性や改ざんの可能性を検証できます。',
+      compareCard: '2つのファイルを比較',
+      dropLeft: '左側: PDF/PNG/JPG/DOCX/TXTをドロップ（またはクリックして選択）',
+      dropRight: '右側: PDF/PNG/JPG/DOCX/TXTをドロップ（またはクリックして選択）',
+      btnCompare: '比較する',
+      diffTitle: '一致／不一致リスト',
+      scoreTitle: '総合スコア',
+
+      corpusDesc: '解析結果（FontPrint）を保存・管理し、後から再利用や比較分析に活用できます。エクスポート・インポートで複数環境での共有も可能です。',
+      corpusCard: '保存済みFontPrint',
+      thId: 'ID',
+      thType: '種別',
+      thDate: '日付',
+      thSummary: '概要',
+      thAction: '操作',
+      btnExport: 'JSONエクスポート',
+      btnImport: 'JSONインポート',
+      btnDelete: '削除',
+      corpusEmpty: '保存済みのFontPrintはありません。解析タブで「コーパスに保存」を押すとここに一覧表示されます。',
+
+      guideCard: '使い方・注意事項',
+      guidePurposeTitle: '📋 ツールの目的',
+      guidePurpose: 'フォント・行間・余白など<strong>版面の癖</strong>から、文書の出所を推定する学習・調査向けツールです。<br>完全クライアント実行のため、<strong>ファイルはサーバーに送信されません</strong>。安全にお試しいただけます。',
+      guideFormatsTitle: '📂 対応ファイル形式と確からしさ',
+      guideModesTitle: '🔍 3つの解析モード（解析タブ）',
+      guideModeBalanced: '<strong>バランス</strong>: OCR精度と速度のバランス型（推奨）',
+      guideModeFast: '<strong>高速</strong>: OCR処理を高速化（精度やや低）',
+      guideModeAccurate: '<strong>高精度</strong>: 文字境界ボックスの精度を最大化（処理時間増）',
+      guideUseTitle: '🛠 フォレンジック・OSINT活用例',
+      guideEthicsTitle: '🔒 プライバシーと倫理',
+      guideNoteTitle: '⚠️ 重要な注意事項',
+      guideNote: '本ツールの解析結果は<strong>「推定の手がかり」</strong>であり、単独で真偽を断定できるものではありません。<br>複数の特徴を組み合わせて総合的に判断し、必要に応じて他の証拠と照合してください。',
+      guideDocTitle: '📖 詳細ドキュメント',
+      guideFormatsBody: '<ul style="list-style:none; padding-left:0;">'
+        + '<li style="margin-bottom:0.75rem;"><strong style="color:var(--acc-sky);">✓ PDF / 画像（.pdf .png .jpg）</strong> - 確からしさ: <strong style="color:var(--acc-lime);">高</strong><br><span style="font-size:0.9rem; color:var(--muted);">OCRで版面を解析。固定レイアウトのため最も正確な結果が得られます。</span></li>'
+        + '<li style="margin-bottom:0.75rem;"><strong style="color:var(--acc-violet);">✓ DOCX（.docx）</strong> - 確からしさ: <strong style="color:var(--warn);">中</strong><br><span style="font-size:0.9rem; color:var(--muted);">XMLから余白・フォント情報を直接抽出。本文も1ページ目をプレビュー表示。</span></li>'
+        + '<li style="margin-bottom:0.75rem;"><strong style="color:var(--acc-lime);">✓ TXT（.txt）</strong> - 確からしさ: <strong style="color:var(--muted);">低</strong><br><span style="font-size:0.9rem; color:var(--muted);">仮想レンダリングで解析。版面情報を持たないため環境依存が大きい。</span></li>'
+        + '<li><strong style="color:var(--muted);">✗ DOC（.doc）</strong> - 未対応<br><span style="font-size:0.9rem; color:var(--muted);">バイナリー形式のため直接解析不可。.docx または .pdf に変換してください。</span></li></ul>',
+      guideUseBody: '<ul>'
+        + '<li><strong>文書改ざん検知</strong>: 同一文書の改訂版を比較し、フォント・余白の変化から編集痕跡を検出</li>'
+        + '<li><strong>出所・作成環境の鑑識</strong>: 余白比率・行間から組織やテンプレートの癖を特定</li>'
+        + '<li><strong>編集チェーン復元</strong>: Word→PDF→画像など変換履歴をフォント変化から推定</li>'
+        + '<li><strong>公開文書テンプレート照合</strong>: 匿名リーク文書と既知の組織文書を比較</li>'
+        + '<li><strong>偽情報検証</strong>: 「公文書」と称する文書の余白・フォントが標準と一致するか確認</li></ul>',
+      guideEthicsBody: '<ul>'
+        + '<li><strong>完全クライアント処理</strong>: ファイルはブラウザー内で解析され、サーバーに送信されません</li>'
+        + '<li><strong>ローカル保存</strong>: コーパス機能はlocalStorage利用（端末内のみ）</li>'
+        + '<li><strong>個人情報厳禁</strong>: デモページには個人情報や機密文書をアップロードしないでください</li>'
+        + '<li><strong>教育・研究目的</strong>: 悪意ある解析目的での利用は禁止。教育・研究・展示用途を前提としています</li></ul>',
+      guideDocBody: 'より詳しい仕様や活用シナリオは、<a href="https://github.com/ipusiron/fontorigin-analyzer" target="_blank" rel="noopener" style="color:var(--acc-sky);">GitHubリポジトリーのREADME</a>をご覧ください。',
+
+      footer: '🔗 GitHubリポジトリーはこちら（ <a href="https://github.com/ipusiron/fontorigin-analyzer" target="_blank" rel="noopener">ipusiron/fontorigin-analyzer</a> ）',
+
+      /* dynamic */
+      certaintyHigh: '高',
+      certaintyMid: '中',
+      certaintyLow: '低',
+      loaded: '{name} を読み込みました',
+      prePrep: '前処理中…',
+      pdfLoading: 'PDF読み込み中…',
+      imgLoading: '画像読み込み中…',
+      ocrPrep: 'OCR準備中…',
+      ocrProgress: 'OCR処理中… {percent}%',
+      done: '解析完了',
+      doneVirtual: '解析完了（仮想レンダリング）',
+      toastSelectFile: 'ファイルを選択してください',
+      toastSelectBoth: '両方のファイルを選択してください',
+      toastAnalyzeFirst: '先に解析してください',
+      toastSaved: 'コーパスに保存しました',
+      toastCopied: 'JSONをコピーしました',
+      toastCopyFailed: 'コピーできませんでした',
+      toastNoText: 'テキストが検出できませんでした。画像の品質を確認してください。',
+      toastUnsupported: '未対応の拡張子です',
+      toastBadType: '対応していないファイル形式です',
+      toastPdfMissing: 'PDF.jsライブラリーが読み込まれていません。ページを再読み込みしてください。',
+      toastOcrFailed: 'OCR処理に失敗しました: {msg}',
+      toastLeftFailed: '左側ファイルの読み込みに失敗しました: {msg}',
+      toastRightFailed: '右側ファイルの読み込みに失敗しました: {msg}',
+      toastImportOk: 'コーパスを読み込みました（{count}件）',
+      toastImportSkipped: 'コーパスを読み込みました（{count}件・{skipped}件は形式不正のため除外）',
+      toastImportFailed: 'インポートに失敗しました（JSONの配列ではありません）',
+      progLeftLoading: '左側ファイル読み込み中...',
+      progRightLoading: '右側ファイル読み込み中...',
+      progLeftDone: '左側ファイル読み込み完了',
+      progRightDone: '右側ファイル読み込み完了',
+      progComparing: '比較処理中...',
+      compareDone: '比較完了',
+      labelFontHeight: '平均フォント高: {v}px',
+      labelDocxFont: '文字サイズ(DOCX): {v}pt',
+      labelLineGap: '行間(概算): {v}px',
+      labelMarginLR: '余白(約mm) 左:{l} 右:{r}',
+      labelMarginTB: '余白(約mm) 上:{t} 下:{b}',
+      labelDocxMargin: '余白(DOCX pt) 上:{t} 下:{b} 左:{l} 右:{r}',
+      labelFontLean: 'フォント傾向: {lean}（横幅比 {aspect}）',
+      leanSerif: 'セリフ寄り',
+      leanSans: 'サンセリフ寄り',
+      leanNeutral: '中間',
+      noData: '（解析データなし）',
+      noMargin: '余白データがありません',
+      noMarginTxt: '（TXTファイルは版面情報を持ちません）',
+      noGlyph: 'グリフデータがありません',
+      noGlyphTxt: '（TXTファイルは版面情報を持ちません）',
+      noGlyphImg: '（画像/PDFで検出）',
+      contentArea: 'コンテンツ領域',
+      chartFontHeight: 'フォント高',
+      chartLineGapLabel: '行間',
+      diffFont: 'フォント候補',
+      diffFontHeight: 'フォント高(±px)',
+      diffLineGap: '行間(±px)',
+      diffNone: '（なし）',
+      txtCompareNote: 'TXTは版面情報を持たないため、内容由来の近似値で比較しています。'
+    },
+
+    en: {
+      languageSwitch: '日本語',
+      pageTitle: 'FontOrigin Analyzer - Document Origin Forensics',
+      metaDescription: 'A forensic tool that infers a document origin from its font and layout fingerprint.',
+      tagline: 'Infer a document origin from its font and layout fingerprint.',
+      themeToDark: 'Switch to dark mode',
+      themeToLight: 'Switch to light mode',
+      themeTitle: 'Toggle theme',
+      help: 'Help',
+
+      tabAnalyze: 'Analyze',
+      tabCompare: 'Compare',
+      tabCorpus: 'Corpus',
+      tabGuide: 'Guide',
+
+      analyzeDesc: 'Upload a document and extract layout features such as fonts, margins and line spacing. It builds a FontPrint fingerprint you can use for origin estimation or tamper detection.',
+      analyzeCard: 'Analyze a file',
+      dropHintAnalyze: 'Drop a PDF / PNG / JPG / DOCX / TXT here (or click to choose)',
+      dropSubAnalyze: 'TXT uses virtual rendering, DOCX uses XML parsing, and PDF/images use OCR for layout analysis.',
+      modeLabel: 'Mode',
+      modeBalanced: 'Balanced',
+      modeFast: 'Fast',
+      modeAccurate: 'Accurate',
+      tipMode: 'Fast: speed over OCR accuracy.<br>Accurate: stronger character-box precision.<br>Balanced: in between.',
+      btnAnalyze: 'Analyze',
+      previewTitle: 'Preview',
+      emptyState: 'Choose a file to<br>see its preview',
+
+      resultSummary: 'Result summary',
+      certainty: 'Confidence',
+      tipCertainty: 'Reliability of the result.<br><strong>High</strong> (PDF/image): fixed layout, most accurate.<br><strong>Medium</strong> (DOCX): based on XML, may differ from the real render.<br><strong>Low</strong> (TXT): virtual render, condition-dependent.',
+      fontCandidates: 'Font candidates',
+      layoutSummary: 'Layout summary',
+      detailTitle: 'Details & visualization',
+      accLineGap: 'Line/character-gap distribution',
+      tipLineGap: 'Visualizes line and character spacing.<br>A consistent pattern hints at a specific template or authoring tool.',
+      accMargin: 'Margin heatmap',
+      tipMargin: 'Visualizes the top/bottom/left/right margins.<br>Margin ratios are template- or organisation-specific and a strong origin clue.',
+      accGlyph: 'Representative glyphs',
+      tipGlyph: 'Crops the actual images of representative characters (a, e, g, 1, l, ") from the OCR bounding boxes.',
+      jsonTitle: 'FontPrint JSON',
+      tipJson: 'A normalized JSON of the extracted features for similarity search and comparison (no personal data).',
+      btnCopy: 'Copy',
+      btnSaveCorpus: 'Save to corpus',
+
+      compareDesc: 'Compare the fonts, margins and line spacing of two documents to check for sameness or possible tampering.',
+      compareCard: 'Compare two files',
+      dropLeft: 'Left: drop a PDF / PNG / JPG / DOCX / TXT (or click to choose)',
+      dropRight: 'Right: drop a PDF / PNG / JPG / DOCX / TXT (or click to choose)',
+      btnCompare: 'Compare',
+      diffTitle: 'Match / mismatch list',
+      scoreTitle: 'Overall score',
+
+      corpusDesc: 'Save and manage FontPrints for later reuse and comparison. Export/import lets you share them across environments.',
+      corpusCard: 'Saved FontPrints',
+      thId: 'ID',
+      thType: 'Type',
+      thDate: 'Date',
+      thSummary: 'Summary',
+      thAction: 'Action',
+      btnExport: 'Export JSON',
+      btnImport: 'Import JSON',
+      btnDelete: 'Delete',
+      corpusEmpty: 'No saved FontPrints yet. Press "Save to corpus" on the Analyze tab and they appear here.',
+
+      guideCard: 'How to use & notes',
+      guidePurposeTitle: '📋 Purpose',
+      guidePurpose: 'A study/investigation tool that infers a document origin from <strong>layout habits</strong> such as fonts, line spacing and margins.<br>It runs fully client-side, so <strong>files are never sent to a server</strong>.',
+      guideFormatsTitle: '📂 Supported formats & confidence',
+      guideModesTitle: '🔍 Three analysis modes (Analyze tab)',
+      guideModeBalanced: '<strong>Balanced</strong>: balance of OCR accuracy and speed (recommended)',
+      guideModeFast: '<strong>Fast</strong>: faster OCR (slightly lower accuracy)',
+      guideModeAccurate: '<strong>Accurate</strong>: maximizes character-box precision (slower)',
+      guideUseTitle: '🛠 Forensic & OSINT use cases',
+      guideEthicsTitle: '🔒 Privacy & ethics',
+      guideNoteTitle: '⚠️ Important',
+      guideNote: 'Results are <strong>clues for estimation</strong>, not proof on their own.<br>Combine several features and cross-check with other evidence.',
+      guideDocTitle: '📖 Full documentation',
+      guideFormatsBody: '<ul style="list-style:none; padding-left:0;">'
+        + '<li style="margin-bottom:0.75rem;"><strong style="color:var(--acc-sky);">✓ PDF / image (.pdf .png .jpg)</strong> - confidence: <strong style="color:var(--acc-lime);">High</strong><br><span style="font-size:0.9rem; color:var(--muted);">Analyzed via OCR. A fixed layout gives the most accurate result.</span></li>'
+        + '<li style="margin-bottom:0.75rem;"><strong style="color:var(--acc-violet);">✓ DOCX (.docx)</strong> - confidence: <strong style="color:var(--warn);">Medium</strong><br><span style="font-size:0.9rem; color:var(--muted);">Margins and fonts are read straight from the XML; the first page is previewed.</span></li>'
+        + '<li style="margin-bottom:0.75rem;"><strong style="color:var(--acc-lime);">✓ TXT (.txt)</strong> - confidence: <strong style="color:var(--muted);">Low</strong><br><span style="font-size:0.9rem; color:var(--muted);">Analyzed via virtual rendering. It carries no layout info, so results depend on the environment.</span></li>'
+        + '<li><strong style="color:var(--muted);">✗ DOC (.doc)</strong> - not supported<br><span style="font-size:0.9rem; color:var(--muted);">A binary format that cannot be parsed directly. Convert it to .docx or .pdf.</span></li></ul>',
+      guideUseBody: '<ul>'
+        + '<li><strong>Tamper detection</strong>: compare revisions of one document and spot edits from font/margin changes</li>'
+        + '<li><strong>Origin / authoring forensics</strong>: identify an organisation or template from margin ratios and line spacing</li>'
+        + '<li><strong>Edit-chain reconstruction</strong>: infer a Word→PDF→image chain from font changes</li>'
+        + '<li><strong>Template matching</strong>: compare an anonymous leak against known organisational documents</li>'
+        + '<li><strong>Disinformation check</strong>: verify whether a claimed "official document" matches the standard margins/fonts</li></ul>',
+      guideEthicsBody: '<ul>'
+        + '<li><strong>Fully client-side</strong>: files are analyzed in the browser and never sent to a server</li>'
+        + '<li><strong>Local storage</strong>: the corpus uses localStorage (device only)</li>'
+        + '<li><strong>No personal data</strong>: never upload personal or confidential documents to the demo page</li>'
+        + '<li><strong>For education/research</strong>: malicious use is prohibited; the tool is for study, research and demonstration</li></ul>',
+      guideDocBody: 'For the full spec and more scenarios, see the <a href="https://github.com/ipusiron/fontorigin-analyzer" target="_blank" rel="noopener" style="color:var(--acc-sky);">README on GitHub</a>.',
+
+      footer: '🔗 GitHub repository ( <a href="https://github.com/ipusiron/fontorigin-analyzer" target="_blank" rel="noopener">ipusiron/fontorigin-analyzer</a> )',
+
+      certaintyHigh: 'High',
+      certaintyMid: 'Medium',
+      certaintyLow: 'Low',
+      loaded: 'Loaded {name}',
+      prePrep: 'Preprocessing…',
+      pdfLoading: 'Loading PDF…',
+      imgLoading: 'Loading image…',
+      ocrPrep: 'Preparing OCR…',
+      ocrProgress: 'OCR… {percent}%',
+      done: 'Done',
+      doneVirtual: 'Done (virtual render)',
+      toastSelectFile: 'Please choose a file.',
+      toastSelectBoth: 'Please choose both files.',
+      toastAnalyzeFirst: 'Please analyze first.',
+      toastSaved: 'Saved to corpus.',
+      toastCopied: 'JSON copied.',
+      toastCopyFailed: 'Could not copy.',
+      toastNoText: 'No text detected. Check the image quality.',
+      toastUnsupported: 'Unsupported file type.',
+      toastBadType: 'Unsupported file type.',
+      toastPdfMissing: 'PDF.js is not loaded. Please reload the page.',
+      toastOcrFailed: 'OCR failed: {msg}',
+      toastLeftFailed: 'Failed to load the left file: {msg}',
+      toastRightFailed: 'Failed to load the right file: {msg}',
+      toastImportOk: 'Imported corpus ({count} entries).',
+      toastImportSkipped: 'Imported corpus ({count} entries; {skipped} skipped as invalid).',
+      toastImportFailed: 'Import failed (not a JSON array).',
+      progLeftLoading: 'Loading left file…',
+      progRightLoading: 'Loading right file…',
+      progLeftDone: 'Left file loaded.',
+      progRightDone: 'Right file loaded.',
+      progComparing: 'Comparing…',
+      compareDone: 'Comparison done.',
+      labelFontHeight: 'Avg font height: {v}px',
+      labelDocxFont: 'Font size (DOCX): {v}pt',
+      labelLineGap: 'Line gap (approx): {v}px',
+      labelMarginLR: 'Margin (~mm) L:{l} R:{r}',
+      labelMarginTB: 'Margin (~mm) T:{t} B:{b}',
+      labelDocxMargin: 'Margin (DOCX pt) T:{t} B:{b} L:{l} R:{r}',
+      labelFontLean: 'Font lean: {lean} (aspect {aspect})',
+      leanSerif: 'serif-leaning',
+      leanSans: 'sans-leaning',
+      leanNeutral: 'neutral',
+      noData: '(no analysis data)',
+      noMargin: 'No margin data',
+      noMarginTxt: '(TXT files carry no layout info)',
+      noGlyph: 'No glyph data',
+      noGlyphTxt: '(TXT files carry no layout info)',
+      noGlyphImg: '(detected in image/PDF)',
+      contentArea: 'Content area',
+      chartFontHeight: 'Font height',
+      chartLineGapLabel: 'Line gap',
+      diffFont: 'Font candidates',
+      diffFontHeight: 'Font height (±px)',
+      diffLineGap: 'Line gap (±px)',
+      diffNone: '(none)',
+      txtCompareNote: 'TXT has no layout info, so the comparison uses content-derived approximations.'
+    }
+  };
+
+  return messages;
+});

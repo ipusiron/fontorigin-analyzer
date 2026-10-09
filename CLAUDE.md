@@ -13,16 +13,19 @@ This tool is part of the "生成AIで作るセキュリティツール100" (100 
 ### Core Technology Stack
 - **Pure client-side**: HTML + vanilla JavaScript + CSS
 - **No build process**: Direct browser execution
-- **External libraries (CDN)**:
-  - Tailwind CSS v3.4.16 (standalone build)
+- **External libraries (CDN, pinned with SRI sha384)**:
   - Tesseract.js v5.1.0 (OCR)
-  - PDF.js v4.7.76 (PDF rendering)
+  - PDF.js v3.11.174 (PDF rendering, cdnjs build)
   - JSZip v3.10.1 (DOCX parsing)
+- (No CSS framework: styling is hand-written in `style.css`.)
 
 ### File Structure
-- `index.html` - Main UI with 4-tab layout (解析/比較/コーパス/ガイド)
-- `script.js` - All application logic (theme, tabs, file analysis, comparison, corpus management)
+- `index.html` - Main UI with 4-tab layout (解析/比較/コーパス/ガイド); declares the meta CSP and `data-i18n` hooks
+- `core.js` - Pure, DOM-free logic (metrics, unit conversion, font guess, corpus sanitize). UMD, unit-tested.
+- `messages.js` - i18n dictionary (ja/en). UMD.
+- `script.js` - UI logic (i18n apply, theme, tabs, file analysis, comparison, corpus management)
 - `style.css` - Theme system (light/dark) and component styles
+- `test/` - `node --test` unit tests for `core.js` and i18n parity (`npm test`)
 - `assets/` - Icons and screenshots
 
 ### Key Features
@@ -84,16 +87,14 @@ python -m http.server 8000
 ```
 
 ### Testing
-- Test with various file formats: PDF, PNG, JPG, DOCX, TXT
-- Verify OCR accuracy across different document layouts
-- Check theme toggle persistence
-- Validate FontPrint JSON export/import
+- Unit tests (pure logic + i18n parity): `npm test` (`node --test test/*.test.js`)
+- Manual: test with various file formats (PDF, PNG, JPG, DOCX, TXT), verify OCR, theme + language toggle persistence, FontPrint JSON export/import (including a malicious import — the id must render as text, not run).
 
 ### Modifying Analysis Logic
-- OCR processing: `script.js:702-711`
-- Metrics computation: `script.js:723-737`
-- Font guessing heuristic: `script.js:300-309`
-- Feature normalization: `script.js:805-831`
+- Pure helpers (median/diffs/clusterLines/guessFont/cosineSimilarity/unit conversion/corpus sanitize): `core.js`
+- OCR + metrics orchestration: `analyzeNow()` in `script.js` (Analyze tab IIFE)
+- DOCX parsing/preview: `parseDocx()` / `renderDocxPreview()` in `script.js`
+- Feature assembly + rendering: `buildFeatures()` / `renderResult()` in `script.js`
 
 ## Key Implementation Notes
 

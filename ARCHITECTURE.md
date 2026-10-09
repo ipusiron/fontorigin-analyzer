@@ -711,16 +711,19 @@ Tesseract.jsは自動的にWorkerを使用（内部実装）:
 
 ### 1. Content Security Policy (CSP)
 
+`index.html` の `<head>` に meta タグで宣言している（GitHub Pagesはレスポンスヘッダーを設定できないため、metaが唯一の手段）。
+
 ```html
-<!-- index.html:16-28 -->
 <meta http-equiv="Content-Security-Policy" content="
   default-src 'self';
-  script-src 'self' 'unsafe-inline' 'unsafe-eval'
-             https://cdn.jsdelivr.net https://cdnjs.cloudflare.com blob:;
+  script-src 'self' blob: 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;
+  worker-src 'self' blob:;
   style-src 'self' 'unsafe-inline';
   img-src 'self' data: blob:;
-  worker-src 'self' blob:;
-  connect-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com blob:;
+  font-src 'self' data:;
+  connect-src 'self' blob: data: https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://tessdata.projectnaptha.com;
+  object-src 'none';
+  base-uri 'self';
 " />
 ```
 
@@ -728,74 +731,64 @@ Tesseract.jsは自動的にWorkerを使用（内部実装）:
 
 | ディレクティブ | 理由 |
 |---------------|------|
-| `script-src 'unsafe-eval'` | Tesseract.js WASMの動的コード生成に必要 |
-| `worker-src blob:` | PDF.js/Tesseract.js の Blob URL Worker |
-| `img-src data: blob:` | Canvas.toDataURL(), OCR入力画像 |
+| `script-src 'wasm-unsafe-eval'` | Tesseract.jsのWASMコンパイルに必要な最小権限。`'unsafe-eval'` は許可しない |
+| `script-src blob:` / `worker-src blob:` | PDF.js・Tesseract.jsのBlob URLワーカー |
+| `img-src data: blob:` | `canvas.toDataURL()`（グリフのサムネイル）、OCR入力画像 |
+| `connect-src ... tessdata.projectnaptha.com` | Tesseractの言語データの取得先 |
+| `style-src 'unsafe-inline'` | ガイドタブなどの静的 `style` 属性に必要 |
 
 **制限している項目:**
-- `frame-src 'none'`: iframe完全禁止（Clickjacking対策）
-- `object-src 'none'`: Flash等の埋め込み禁止
+- `object-src 'none'`: プラグイン埋め込み禁止
+- `base-uri 'self'`: `<base>` の乗っ取り防止
+
+> metaタグでは無効になる `frame-ancestors` / `X-Frame-Options` / `X-Content-Type-Options` は宣言しない（SECURITY.md参照）。
 
 ### 2. Subresource Integrity (SRI)
 
+3本のCDNスクリプトすべてに `integrity`（sha384）と `crossorigin` を付与している。
+
 ```html
-<!-- index.html:379-398 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"
-        integrity="sha512-5W3xKFLLp8LmL8LvLdLHCVQPKqMkL6xJlRGvJLpCJkSPEfF6DfpIqL3RLFqHQlCvPLI89EKMt7LnCb9Fqb7/LA=="
+        integrity="sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e"
         crossorigin="anonymous"></script>
 ```
 
 **効果:**
-- CDNが侵害されても改ざんされたスクリプトは実行されない
-- ハッシュ不一致でブラウザーがブロック
+- CDNが侵害されても、ハッシュ不一致でブラウザーが実行をブロックする
+- PDF.jsワーカー・Tesseractの言語データは実行時取得のためSRI対象外で、CSPの `connect-src` / `worker-src` で取得先を制限する
 
-### 3. XSS対策
+### 3. XSS対策（コーパスのインポート）
 
-**原則:** `innerHTML` は信頼できるデータのみ
-
-```javascript
-// ✅ 安全な例（数値・CSS変数のみ）
-pill.innerHTML = `<span class="dot" style="background:var(${col})"></span>${lev}`;
-
-// ✅ ユーザー入力は textContent
-li.textContent = fontCandidate.name; // script.js:672
-
-// ❌ 危険な例（本ツールでは使用していない）
-element.innerHTML = userInput; // XSS脆弱性
-```
-
-**localStorage注入対策:**
+コーパスJSONは外部から持ち込まれる唯一のデータである。`core.js` の `sanitizeFontPrint()` が既知のキーだけを持つオブジェクトに再構築し、値をプリミティブへ強制する。
 
 ```javascript
-// JSON.parse の前にバリデーション
-const raw = localStorage.getItem('foa_corpus') || '[]';
-let corpus;
-try{
-  corpus = JSON.parse(raw);
-  if(!Array.isArray(corpus)) corpus = [];
-} catch(e){
-  console.error('[Corpus] Invalid JSON in localStorage');
-  corpus = [];
+// core.js
+function sanitizeFontPrint(entry){
+  // source が許可値でなければ null（エントリーを破棄）
+  // id/created_at は文字列スライス、数値は Number()、余計なキーは捨てる
 }
 ```
 
-### 4. ファイルアップロードの検証
+描画は必ずDOM API＋`textContent` で行い、インポート値を `innerHTML` に渡さない。
 
 ```javascript
-// script.js:438-445 (analyze tab)
-const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg',
-                      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                      'text/plain'];
-
-if(!allowedTypes.includes(file.type)){
-  showToast('対応していないファイル形式です', 'error');
-  return;
-}
+// script.js renderCorpus(): 旧 tr.innerHTML=`...${f.id}...` を廃止
+const td = document.createElement('td');
+td.textContent = f.id;   // <img onerror=...> を仕込んでも文字列として表示される
+tr.appendChild(td);
 ```
 
-**制約:**
-- MIME type チェック（簡易的）
-- 悪意あるファイルは実行不可（クライアント処理のため影響は限定的）
+`localStorage` から読むときも毎回 `parseCorpus()` でサニタイズする（手編集された値を信頼しない）。
+
+### 4. ファイルの検証
+
+拡張子のホワイトリスト（`pdf/png/jpg/jpeg/docx/txt`）で弾く。解析はすべてクライアント内で完結し、ファイルは実行されないため影響は限定的である。
+
+```javascript
+// script.js
+const ALLOWED_EXT = ['pdf','png','jpg','jpeg','docx','txt'];
+if(!ALLOWED_EXT.includes(extOf(file))){ showToast(t('toastBadType'),'error'); return; }
+```
 
 ---
 

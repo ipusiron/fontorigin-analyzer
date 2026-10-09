@@ -1,0 +1,10 @@
+{
+  "name": "fontorigin-analyzer",
+  "version": "1.1.0",
+  "private": true,
+  "description": "Document origin forensic analyzer (Day090). Pure logic is unit tested here.",
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "engines": { "node": ">=18" }
+}

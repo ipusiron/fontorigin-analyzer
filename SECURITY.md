@@ -11,31 +11,36 @@
 #### 実装済み対策
 
 1. **Content Security Policy (CSP)**
-   - `default-src 'self'` による厳格なリソース制限
-   - 外部CDNは必要最小限のドメインのみ許可
-   - インラインスクリプトは最小限に抑制（Tesseract/PDF.js worker用のみ）
+   - `index.html` の `<meta http-equiv="Content-Security-Policy">` で宣言している
+   - `default-src 'self'` を基本とし、`script-src` は `'self' blob: 'wasm-unsafe-eval' cdn.jsdelivr.net cdnjs.cloudflare.com` に限定
+   - `'wasm-unsafe-eval'` はTesseract.jsのWASM実行に必要な最小権限で、`'unsafe-eval'` は許可していない
+   - `object-src 'none'` / `base-uri 'self'` を指定
+   - GitHub Pagesはレスポンスヘッダーを設定できないため、metaタグが唯一の手段である。metaタグでは無効になる `X-Frame-Options` / `X-Content-Type-Options` / `frame-ancestors` は宣言しない（後述）
 
 2. **Subresource Integrity (SRI)**
-   - PDF.js: SHA-512ハッシュ検証
-   - JSZip: SHA-384ハッシュ検証
-   - Tesseract.js: SHA-384ハッシュ検証
-   - ※ Tailwind CDNはSRI未対応のため注意喚起コメント追加
+   - Tesseract.js / PDF.js / JSZip の3本すべてに `integrity="sha384-..."` と `crossorigin="anonymous"` を付与
+   - バージョン固定URLなのでハッシュは安定し、CDN侵害時は改ざんスクリプトがブロックされる
+   - PDF.jsワーカー・Tesseractの言語データは `<script>` 経由ではなく実行時に取得されるためSRIの対象外。取得先は上記CSPの `connect-src` / `worker-src` で制限している
 
-3. **セキュリティヘッダー**
-   - `X-Content-Type-Options: nosniff`
-   - `X-Frame-Options: DENY`
-   - `Referrer-Policy: strict-origin-when-cross-origin`
-   - `Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()`
+3. **XSS対策（コーパスのインポート）**
+   - コーパスJSONのインポート値は `core.js` の `sanitizeFontPrint()` で型を強制し、既知のキーだけを持つオブジェクトに再構築する
+   - 表描画はすべてDOM API＋`textContent` で行い、インポート値を `innerHTML` に渡さない（格納型XSSの遮断）
+   - `localStorage` から読むときも毎回サニタイズする（手編集された値を信頼しない）
 
-4. **XSS対策**
-   - ユーザー入力は`textContent`で安全に処理
-   - `innerHTML`使用箇所は内部データ・制御されたCSS変数のみ
-   - 外部入力の直接DOM挿入を回避
-
-5. **クライアントサイド完結**
+4. **クライアントサイド完結**
    - ファイル解析は100%ブラウザー内で完結
    - サーバーへのデータ送信なし
-   - localStorage使用（端末内のみ保存）
+   - コーパスは `localStorage` に保存（端末内のみ）
+
+#### GitHub Pagesでは設定できない項目
+
+次のヘッダーはHTTPレスポンスヘッダーでのみ有効で、metaタグでは無視される。GitHub Pagesはヘッダーを設定できないため本ツールでは**宣言していない**（宣言しても誤った安心感を与えるだけである）。
+
+- `X-Frame-Options` / CSP `frame-ancestors`（クリックジャッキング対策）
+- `X-Content-Type-Options: nosniff`
+- `Permissions-Policy`
+
+自己ホスティングする場合は、Webサーバー側でこれらのヘッダーを付与することを推奨する。
 
 #### 既知の制限事項
 
@@ -100,5 +105,5 @@
 
 ---
 
-**最終更新**: 2025年10月5日
-**バージョン**: 1.0.0
+**最終更新**: 2026年10月9日
+**バージョン**: 1.1.0

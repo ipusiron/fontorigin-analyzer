@@ -326,7 +326,6 @@ body{
 canvas{
   display:block;
   max-width:100%;
-  min-height:400px;
   border:2px solid rgba(0,0,0,0.1);
   border-radius:4px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
@@ -335,6 +334,14 @@ canvas{
 :root.dark canvas{
   border-color:rgba(255,255,255,0.15);
   background:#2d2d2d;
+}
+/* Preview canvases: fit without stretching short/wide pages (object-fit:contain). */
+.canvas-fit{
+  width:100%;
+  min-height:320px;
+  max-height:72vh;
+  height:auto;
+  object-fit:contain;
 }
 /* Chart canvases - no min-height */
 #chartLineGap{
@@ -536,6 +543,7 @@ canvas{
   font-weight:700;
   font-size:12px;
   line-height:1;
+  position:relative; /* anchor the 44px tap target below */
   color:var(--muted);
   background:var(--surface);
   border:2px solid var(--line);
@@ -568,7 +576,7 @@ canvas{
 /* Tooltip bubble (portal-rendered to body) */
 .tooltip{
   position:fixed; /* Portal positioning */
-  max-width:416px;
+  max-width:min(416px, calc(100vw - 20px));
   padding:14px 16px;
   border-radius:12px;
   background: color-mix(in oklab, var(--card) 92%, black 8%); /* Subtle darkening */
@@ -665,3 +673,68 @@ canvas{
 @media (min-width: 768px){
   .md\:grid-cols-2{grid-template-columns:repeat(2, 1fr)}
 }
+.text-center{text-align:center}
+
+/* ===== Day090 retrofit: new components ===== */
+
+/* Secondary hint text (replaces undefined Tailwind text-sm/muted combos). */
+.hint-sub{font-size:0.875rem; color:var(--muted)}
+
+/* Language toggle button (sits next to the theme toggle). */
+.lang-toggle{
+  min-height:36px; padding:.35rem .7rem; border-radius:.6rem;
+  border:1px solid var(--line); background:var(--surface); color:var(--muted);
+  font-weight:600; cursor:pointer; transition:all .2s ease;
+}
+.lang-toggle:hover{border-color:var(--acc-sky); color:var(--acc-sky)}
+.lang-toggle:focus-visible{outline:2px solid var(--acc-sky); outline-offset:2px}
+
+/* Expand the (?) help button tap area to the 44px recommendation without
+   enlarging its visual size. */
+.qmark::after{
+  content:""; position:absolute; top:50%; left:50%;
+  width:44px; height:44px; transform:translate(-50%,-50%);
+}
+
+/* Corpus table: horizontal scroll contained to its own wrapper (was an
+   undefined overflow-auto on the whole card, which broke mobile layout). */
+.table-wrap{width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch}
+.corpus-table{width:100%; border-collapse:collapse; min-width:520px}
+.corpus-table td{word-break:break-all}
+.corpus-empty{padding:1rem; text-align:center; color:var(--muted); font-size:.9rem}
+
+/* Danger callout (guide tab). */
+.callout-danger{
+  background:rgba(220,38,38,0.1); border-left:3px solid var(--danger);
+  padding:.75rem; border-radius:.5rem;
+}
+
+/* Margin heatmap pieces (moved out of inline JS styles). */
+.map-empty{padding:1rem; text-align:center; color:var(--muted); font-size:.875rem}
+.map-box{position:absolute; inset:0; background:linear-gradient(135deg,#8b5cf622,#0ea5e922)}
+.map-inner{
+  position:absolute; background:var(--surface); border:2px solid var(--acc-sky);
+  border-radius:6px; box-shadow:0 0 20px rgba(34,211,238,0.3);
+  display:flex; align-items:center; justify-content:center;
+  font-size:.75rem; color:var(--muted);
+}
+.map-label{
+  position:absolute; font-size:.7rem; font-weight:600; color:var(--text);
+  background:var(--card); padding:2px 6px; border-radius:4px;
+  box-shadow:0 1px 3px rgba(0,0,0,0.1); white-space:nowrap; z-index:2;
+}
+
+/* Representative glyph cells. */
+.glyph-cell{display:flex; flex-direction:column; align-items:center; gap:4px}
+.glyph-canvas{
+  width:96px; height:96px; min-height:unset;
+  border:1px solid var(--line); border-radius:6px; background:var(--surface);
+}
+.glyph-label{font-size:.75rem; color:var(--muted); font-weight:600}
+.glyph-empty{
+  grid-column:1/-1; padding:1rem; text-align:center;
+  color:var(--muted); font-size:.875rem;
+}
+
+/* Compare: the TXT caveat line. */
+.diff-note{color:var(--muted); font-size:.8rem; font-style:italic}
