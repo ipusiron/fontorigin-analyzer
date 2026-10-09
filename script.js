@@ -131,8 +131,8 @@ if (typeof pdfjsLib === 'undefined') {
   };
   tabs.forEach(b => {
     b.addEventListener('click', () => {
-      tabs.forEach(x => x.classList.remove('is-active'));
-      b.classList.add('is-active');
+      tabs.forEach(x => { x.classList.remove('is-active'); x.setAttribute('aria-selected', 'false'); });
+      b.classList.add('is-active'); b.setAttribute('aria-selected', 'true');
       const target = b.dataset.tab;
       Object.entries(panes).forEach(([k, el]) => el.classList.toggle('hidden', k !== target));
     });
@@ -484,12 +484,13 @@ function cropGlyphsFromText(cnv, glyphs, pageWPt) {
     const ext = extOf(currentFile);
     document.getElementById('sourceType').textContent = ext.toUpperCase();
 
-    let imgBitmap = null, pdfPage = null;
+    let imgBitmap = null, pdfPage = null, pdfDoc = null;
     if (ext === 'pdf') {
       if (typeof pdfjsLib === 'undefined') { showToast(t('toastPdfMissing'), 'error'); spinner.classList.add('hidden'); prog.textContent = ''; return; }
       prog.textContent = t('pdfLoading');
       const ab = await readFileAsArrayBuffer(currentFile);
       const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
+      pdfDoc = pdf;
       const page = await pdf.getPage(1);
       pdfPage = page;
       const viewport = page.getViewport({ scale: 1.5 });
@@ -553,13 +554,36 @@ function cropGlyphsFromText(cnv, glyphs, pageWPt) {
         const tf = await extractPdfTextFeatures(pdfPage);
         if (tf) {
           const glyphSigs = cropGlyphsFromText(canvas, tf.glyphs, tf.pageWPt);
+
+          // Multi-page aggregation (D): process remaining pages via the text
+          // layer (no render needed) and compute page-to-page margin spread.
+          const CAP = 20;
+          const nPages = pdfDoc ? pdfDoc.numPages : 1;
+          const perPage = [{ fontSizePt: tf.fontSizePt, lineGapPt: tf.lineGapPt, margins: tf.marginsMM }];
+          for (let p = 2; p <= Math.min(nPages, CAP); p++) {
+            try {
+              const pg = await pdfDoc.getPage(p);
+              const tfp = await extractPdfTextFeatures(pg);
+              if (tfp) perPage.push({ fontSizePt: tfp.fontSizePt, lineGapPt: tfp.lineGapPt, margins: tfp.marginsMM });
+            } catch (e) { warn('[PDF page ' + p + ']', e); }
+          }
+          const agg = Core.aggregatePageMetrics(perPage);
+          const marginsMM = agg ? agg.marginsMM : tf.marginsMM;
+          const fontSizePt = agg ? agg.fontSizePt : tf.fontSizePt;
+          const lineGapPt = agg ? agg.lineGapPt : tf.lineGapPt;
+          const mmToPx = mm => (mm / 25.4) * 96;
+
           lastFeatures = await buildFeatures({
             source: 'PDF/IMG',
             fontCandidates: tf.candidates.length ? tf.candidates : tf.fontLean.candidates,
             fontLean: tf.fontLean,
-            fontSizePx: Core.ptToPx(tf.fontSizePt), lineGapPx: Core.ptToPx(tf.lineGapPt),
-            kerningSig: 'pdf-text', marginsMM: tf.marginsMM, glyphSigs,
-            layoutVec: tf.vecPx, extras: { method: 'text-layer' }
+            fontSizePx: Core.ptToPx(fontSizePt), lineGapPx: Core.ptToPx(lineGapPt),
+            kerningSig: 'pdf-text', marginsMM, glyphSigs,
+            layoutVec: [Core.ptToPx(fontSizePt), Core.ptToPx(lineGapPt), mmToPx(marginsMM.left), mmToPx(marginsMM.right), mmToPx(marginsMM.top), mmToPx(marginsMM.bottom)],
+            extras: {
+              method: 'text-layer', pages: nPages, analyzedPages: perPage.length,
+              marginSpreadMm: agg ? agg.spreadMm : 0, outlierPages: agg ? agg.outliers : []
+            }
           });
           spinner.classList.add('hidden'); prog.textContent = t('done');
           return;
@@ -591,7 +615,12 @@ function cropGlyphsFromText(cnv, glyphs, pageWPt) {
       const rightMarginPx = canvas.width - Math.max(...words.map(w => w.bbox.x1));
       const topMarginPx = Math.min(...words.map(w => w.bbox.y0));
       const bottomMarginPx = canvas.height - Math.max(...words.map(w => w.bbox.y1));
-      const aspect = Core.median(words.map(w => (w.bbox.x1 - w.bbox.x0) / (w.bbox.y1 - w.bbox.y0 + 1)));
+      // Per-character aspect (width/chars ÷ height): a word-level ratio would
+      // just track word length, not glyph shape (E).
+      const aspect = Core.median(words.map(w => {
+        const chars = Math.max(1, (w.text || '').trim().length);
+        return ((w.bbox.x1 - w.bbox.x0) / chars) / (w.bbox.y1 - w.bbox.y0 + 1);
+      }));
       const fontGuess = Core.guessFont(aspect);
 
       lastFeatures = await buildFeatures({
@@ -728,6 +757,11 @@ function cropGlyphsFromText(cnv, glyphs, pageWPt) {
     const lean = leanLabel(fontLean || L.font_lean);
     if (lean) items.push(lean);
     if (f.extras?.method) items.push(t('labelMethod', { method: t(f.extras.method === 'text-layer' ? 'methodTextLayer' : 'methodOcr') }));
+    if (f.extras?.pages > 1) {
+      items.push(t('labelPages', { n: f.extras.pages }));
+      items.push(t('labelMarginSpread', { v: (f.extras.marginSpreadMm ?? 0).toFixed(1) }));
+      if (f.extras.outlierPages && f.extras.outlierPages.length) items.push(t('labelOutlierPages', { pages: f.extras.outlierPages.join(', ') }));
+    }
     if (!items.length) items.push(t('noData'));
     items.forEach(text => { const li = document.createElement('li'); li.textContent = text; ul.appendChild(li); });
   }
@@ -956,7 +990,12 @@ function cropGlyphsFromText(cnv, glyphs, pageWPt) {
       const rightMarginPx = canvas.width - Math.max(...words.map(w => w.bbox.x1));
       const topMarginPx = Math.min(...words.map(w => w.bbox.y0));
       const bottomMarginPx = canvas.height - Math.max(...words.map(w => w.bbox.y1));
-      const aspect = Core.median(words.map(w => (w.bbox.x1 - w.bbox.x0) / (w.bbox.y1 - w.bbox.y0 + 1)));
+      // Per-character aspect (width/chars ÷ height): a word-level ratio would
+      // just track word length, not glyph shape (E).
+      const aspect = Core.median(words.map(w => {
+        const chars = Math.max(1, (w.text || '').trim().length);
+        return ((w.bbox.x1 - w.bbox.x0) / chars) / (w.bbox.y1 - w.bbox.y0 + 1);
+      }));
       return {
         source: 'PDF/IMG',
         vector: [fontSizePx, lineGapPx, leftMarginPx, rightMarginPx, topMarginPx, bottomMarginPx],

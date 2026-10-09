@@ -222,6 +222,31 @@
     return { comparable: true, sameSource, score: distScore(dims), breakdown };
   }
 
+  /**
+   * Aggregate per-page metrics of a multi-page PDF (D).
+   * pages: [{ fontSizePt, lineGapPt, margins:{top,bottom,left,right} (mm) }].
+   * Returns median metrics plus the page-to-page margin spread and the 1-based
+   * page numbers whose average margin deviates > 3mm from the median (a simple
+   * tamper / spliced-page signal).
+   */
+  function aggregatePageMetrics(pages) {
+    if (!pages || !pages.length) return null;
+    const med = sel => median(pages.map(sel));
+    const sides = ['top', 'bottom', 'left', 'right'];
+    const medSide = {};
+    sides.forEach(s => { medSide[s] = median(pages.map(p => p.margins[s])); });
+    // Deviation per SIDE (not the 4-side average): a wider left margin that
+    // shifts text right would cancel out in an average, hiding the change.
+    let spread = 0; const outliers = [];
+    pages.forEach((p, i) => {
+      let dev = 0;
+      sides.forEach(s => { const d = Math.abs(p.margins[s] - medSide[s]); if (d > dev) dev = d; });
+      if (dev > spread) spread = dev;
+      if (dev > 3) outliers.push(i + 1);
+    });
+    return { fontSizePt: med(p => p.fontSizePt), lineGapPt: med(p => p.lineGapPt), marginsMM: medSide, spreadMm: round1(spread), outliers, pageCount: pages.length };
+  }
+
   /** One-line summary used in the corpus table (safe primitive string). */
   function corpusSummary(entry) {
     const f = (entry && entry.features) || {};
@@ -264,7 +289,7 @@
     SOURCES,
     clamp, round1, median, diffs, clusterLines,
     pxToMm, ptToPx, ptToMm,
-    guessFont, cosineSimilarity, compareEntries,
+    guessFont, cosineSimilarity, compareEntries, aggregatePageMetrics,
     cleanFontName, fontCandidatesFromNames,
     sanitizeFontPrint, parseCorpus, corpusSummary
   });

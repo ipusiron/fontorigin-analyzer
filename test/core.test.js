@@ -170,6 +170,31 @@ test('compareEntries: refuses when too few shared dimensions', () => {
   assert.equal(r.reason, 'insufficient');
 });
 
+test('aggregatePageMetrics: uniform pages -> no spread, no outliers', () => {
+  const m = { top: 25, bottom: 25, left: 20, right: 20 };
+  const r = core.aggregatePageMetrics([
+    { fontSizePt: 11, lineGapPt: 6, margins: { ...m } },
+    { fontSizePt: 11, lineGapPt: 6, margins: { ...m } },
+    { fontSizePt: 11, lineGapPt: 6, margins: { ...m } }
+  ]);
+  assert.equal(r.pageCount, 3);
+  assert.equal(r.spreadMm, 0);
+  assert.deepEqual(r.outliers, []);
+  assert.deepEqual(r.marginsMM, { top: 25, bottom: 25, left: 20, right: 20 });
+});
+
+test('aggregatePageMetrics: flags a spliced page', () => {
+  const normal = { top: 25, bottom: 25, left: 20, right: 20 };   // avg 22.5
+  const tampered = { top: 40, bottom: 40, left: 35, right: 35 }; // avg 37.5 (dev 15 > 3)
+  const r = core.aggregatePageMetrics([
+    { fontSizePt: 11, lineGapPt: 6, margins: { ...normal } },
+    { fontSizePt: 11, lineGapPt: 6, margins: { ...normal } },
+    { fontSizePt: 11, lineGapPt: 6, margins: { ...tampered } }
+  ]);
+  assert.deepEqual(r.outliers, [3]);
+  assert.ok(r.spreadMm > 3);
+});
+
 test('corpusSummary is a safe primitive string', () => {
   assert.equal(core.corpusSummary({ features: { avg_font_size_px: 12, line_gap_px: 5 } }), 'font 12px / gap 5px');
   assert.equal(core.corpusSummary({ features: {} }), 'font –px / gap –px');

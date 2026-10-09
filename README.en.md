@@ -56,7 +56,7 @@ Unlike generic metadata extractors (such as exiftool) or font-identification ser
 
 | Tab | What it does |
 |:--|:--|
-| **Analyze** | Upload a document, extract features, and build a FontPrint. Three OCR modes (balanced/fast/accurate); shows font candidates, a margin heatmap, representative glyphs and a line-gap chart; export JSON. |
+| **Analyze** | Upload a document, extract features, and build a FontPrint. Three OCR modes (balanced/fast/accurate); shows font candidates, a margin heatmap, representative glyphs and a line-gap chart; export JSON. Multi-page PDFs report the page-to-page margin spread and flag deviating (possibly spliced) pages. |
 | **Compare** | Load two files side by side and compare fonts, font height and line gap; cosine-similarity score. |
 | **Corpus** | Save and manage FontPrints in `localStorage`; export/import JSON (import is schema-validated). |
 | **Guide** | Supported formats, analysis modes, forensic/OSINT examples, and ethics notes. |

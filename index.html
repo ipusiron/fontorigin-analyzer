@@ -40,11 +40,11 @@
         <p class="header-tagline" data-i18n="tagline">フォントと版面の特徴から文書の出所を推定するフォレンジックツール</p>
       </div>
       <div class="header-actions">
-        <nav class="tabs">
-          <button type="button" class="tab is-active" data-tab="analyze" data-i18n="tabAnalyze">解析</button>
-          <button type="button" class="tab" data-tab="compare" data-i18n="tabCompare">比較</button>
-          <button type="button" class="tab" data-tab="corpus" data-i18n="tabCorpus">コーパス</button>
-          <button type="button" class="tab" data-tab="guide" data-i18n="tabGuide">ガイド</button>
+        <nav class="tabs" role="tablist" aria-label="FontOrigin Analyzer">
+          <button type="button" id="tabbtn-analyze" role="tab" aria-selected="true" aria-controls="tab-analyze" class="tab is-active" data-tab="analyze" data-i18n="tabAnalyze">解析</button>
+          <button type="button" id="tabbtn-compare" role="tab" aria-selected="false" aria-controls="tab-compare" class="tab" data-tab="compare" data-i18n="tabCompare">比較</button>
+          <button type="button" id="tabbtn-corpus" role="tab" aria-selected="false" aria-controls="tab-corpus" class="tab" data-tab="corpus" data-i18n="tabCorpus">コーパス</button>
+          <button type="button" id="tabbtn-guide" role="tab" aria-selected="false" aria-controls="tab-guide" class="tab" data-tab="guide" data-i18n="tabGuide">ガイド</button>
         </nav>
         <!-- Language toggle (JA <-> EN) -->
         <button type="button" id="langToggle" class="lang-toggle" aria-label="Switch language">English</button>
@@ -58,7 +58,7 @@
 
   <main class="main-content">
     <!-- 解析 -->
-    <section id="tab-analyze" class="tabpane">
+    <section id="tab-analyze" class="tabpane" role="tabpanel" aria-labelledby="tabbtn-analyze">
       <div class="tab-description">
         <p data-i18n="analyzeDesc">文書ファイルをアップロードし、フォント・余白・行間などの版面特徴を抽出。文書の出所推定や改ざん検知に活用できるFontPrint（指紋）を生成します。</p>
       </div>
@@ -92,7 +92,7 @@
               <button type="button" id="btnAnalyze" class="btn btn-primary" data-i18n="btnAnalyze">解析する</button>
               <div class="flex items-center gap-2">
                 <div id="analyzeSpinner" class="spinner hidden"></div>
-                <span id="analyzeProgress" class="hint-sub"></span>
+                <span id="analyzeProgress" class="hint-sub" role="status" aria-live="polite"></span>
               </div>
             </div>
           </div>
@@ -195,7 +195,7 @@
     </section>
 
     <!-- 比較 -->
-    <section id="tab-compare" class="tabpane hidden">
+    <section id="tab-compare" class="tabpane hidden" role="tabpanel" aria-labelledby="tabbtn-compare">
       <div class="tab-description">
         <p data-i18n="compareDesc">2つの文書のフォント・余白・行間などの特徴を比較し、同一性や改ざんの可能性を検証できます。</p>
       </div>
@@ -218,7 +218,7 @@
           <button type="button" id="btnCompare" class="btn btn-primary" data-i18n="btnCompare">比較する</button>
           <div class="flex items-center gap-2">
             <div id="compareSpinner" class="spinner hidden"></div>
-            <span id="compareProgress" class="hint-sub"></span>
+            <span id="compareProgress" class="hint-sub" role="status" aria-live="polite"></span>
           </div>
         </div>
       </div>
@@ -236,7 +236,7 @@
     </section>
 
     <!-- コーパス -->
-    <section id="tab-corpus" class="tabpane hidden">
+    <section id="tab-corpus" class="tabpane hidden" role="tabpanel" aria-labelledby="tabbtn-corpus">
       <div class="tab-description">
         <p data-i18n="corpusDesc">解析結果（FontPrint）を保存・管理し、後から再利用や比較分析に活用できます。エクスポート・インポートで複数環境での共有も可能です。</p>
       </div>
@@ -267,7 +267,7 @@
     </section>
 
     <!-- ガイド -->
-    <section id="tab-guide" class="tabpane hidden">
+    <section id="tab-guide" class="tabpane hidden" role="tabpanel" aria-labelledby="tabbtn-guide">
       <div class="card card--pattern">
         <h2 class="card-title" data-i18n="guideCard">使い方・注意事項</h2>
         <hr class="grad-line my-3" />

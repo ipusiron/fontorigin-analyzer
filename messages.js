@@ -89,7 +89,7 @@
       guideUseTitle: '🛠 フォレンジック・OSINT活用例',
       guideEthicsTitle: '🔒 プライバシーと倫理',
       guideNoteTitle: '⚠️ 重要な注意事項',
-      guideNote: '本ツールの解析結果は<strong>「推定の手がかり」</strong>であり、単独で真偽を断定できるものではありません。<br>複数の特徴を組み合わせて総合的に判断し、必要に応じて他の証拠と照合してください。',
+      guideNote: '本ツールの解析結果は<strong>「推定の手がかり」</strong>であり、単独で真偽を断定できるものではありません。<br>複数の特徴を組み合わせて総合的に判断し、必要に応じて他の証拠と照合してください。<br>フォント傾向はグリフの横幅比からの<strong>簡易ヒューリスティック</strong>です。またOCR経路は実行ごとに結果が多少ゆらぎます（テキストレイヤーのある電子PDFは安定・高精度）。',
       guideDocTitle: '📖 詳細ドキュメント',
       guideFormatsBody: '<ul style="list-style:none; padding-left:0;">'
         + '<li style="margin-bottom:0.75rem;"><strong style="color:var(--acc-sky);">✓ PDF / 画像（.pdf .png .jpg）</strong> - 確からしさ: <strong style="color:var(--acc-lime);">高</strong><br><span style="font-size:0.9rem; color:var(--muted);">OCRで版面を解析。固定レイアウトのため最も正確な結果が得られます。</span></li>'
@@ -155,6 +155,9 @@
       labelMethod: '抽出方法: {method}',
       methodTextLayer: 'テキストレイヤー（高精度）',
       methodOcr: 'OCR',
+      labelPages: 'ページ数: {n}',
+      labelMarginSpread: '余白のばらつき: ±{v}mm',
+      labelOutlierPages: 'ばらつきが大きいページ: {pages}',
       leanSerif: 'セリフ寄り',
       leanSans: 'サンセリフ寄り',
       leanNeutral: '中間',
@@ -255,7 +258,7 @@
       guideUseTitle: '🛠 Forensic & OSINT use cases',
       guideEthicsTitle: '🔒 Privacy & ethics',
       guideNoteTitle: '⚠️ Important',
-      guideNote: 'Results are <strong>clues for estimation</strong>, not proof on their own.<br>Combine several features and cross-check with other evidence.',
+      guideNote: 'Results are <strong>clues for estimation</strong>, not proof on their own.<br>Combine several features and cross-check with other evidence.<br>The font lean is a <strong>rough heuristic</strong> from glyph width ratios, and the OCR path varies slightly between runs (electronic PDFs with a text layer are stable and accurate).',
       guideDocTitle: '📖 Full documentation',
       guideFormatsBody: '<ul style="list-style:none; padding-left:0;">'
         + '<li style="margin-bottom:0.75rem;"><strong style="color:var(--acc-sky);">✓ PDF / image (.pdf .png .jpg)</strong> - confidence: <strong style="color:var(--acc-lime);">High</strong><br><span style="font-size:0.9rem; color:var(--muted);">Analyzed via OCR. A fixed layout gives the most accurate result.</span></li>'
@@ -320,6 +323,9 @@
       labelMethod: 'Extraction: {method}',
       methodTextLayer: 'text layer (high accuracy)',
       methodOcr: 'OCR',
+      labelPages: 'Pages: {n}',
+      labelMarginSpread: 'Margin spread: ±{v}mm',
+      labelOutlierPages: 'Deviating pages: {pages}',
       leanSerif: 'serif-leaning',
       leanSans: 'sans-leaning',
       leanNeutral: 'neutral',
