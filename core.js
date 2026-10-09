@@ -247,6 +247,14 @@
     return { fontSizePt: med(p => p.fontSizePt), lineGapPt: med(p => p.lineGapPt), marginsMM: medSide, spreadMm: round1(spread), outliers, pageCount: pages.length };
   }
 
+  /** Format a PDF date string ("D:20251207010212+09'00'") to "YYYY-MM-DD".
+   *  Returns a trimmed fallback when it does not match. */
+  function formatPdfDate(s) {
+    if (typeof s !== 'string' || !s) return '';
+    const m = /D:(\d{4})(\d{2})(\d{2})/.exec(s);
+    return m ? `${m[1]}-${m[2]}-${m[3]}` : s.slice(0, 32);
+  }
+
   /** One-line summary used in the corpus table (safe primitive string). */
   function corpusSummary(entry) {
     const f = (entry && entry.features) || {};
@@ -290,7 +298,7 @@
     clamp, round1, median, diffs, clusterLines,
     pxToMm, ptToPx, ptToMm,
     guessFont, cosineSimilarity, compareEntries, aggregatePageMetrics,
-    cleanFontName, fontCandidatesFromNames,
+    cleanFontName, fontCandidatesFromNames, formatPdfDate,
     sanitizeFontPrint, parseCorpus, corpusSummary
   });
 });

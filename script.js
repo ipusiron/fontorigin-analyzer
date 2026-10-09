@@ -129,12 +129,23 @@ if (typeof pdfjsLib === 'undefined') {
     corpus: document.getElementById('tab-corpus'),
     guide: document.getElementById('tab-guide')
   };
-  tabs.forEach(b => {
-    b.addEventListener('click', () => {
-      tabs.forEach(x => { x.classList.remove('is-active'); x.setAttribute('aria-selected', 'false'); });
-      b.classList.add('is-active'); b.setAttribute('aria-selected', 'true');
-      const target = b.dataset.tab;
-      Object.entries(panes).forEach(([k, el]) => el.classList.toggle('hidden', k !== target));
+  function activate(b) {
+    tabs.forEach(x => { x.classList.remove('is-active'); x.setAttribute('aria-selected', 'false'); });
+    b.classList.add('is-active'); b.setAttribute('aria-selected', 'true');
+    const target = b.dataset.tab;
+    Object.entries(panes).forEach(([k, el]) => el.classList.toggle('hidden', k !== target));
+  }
+  tabs.forEach((b, i) => {
+    b.addEventListener('click', () => activate(b));
+    // WAI-ARIA tabs: arrow keys move focus+selection, Home/End jump to ends.
+    b.addEventListener('keydown', e => {
+      let j = null;
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') j = (i + 1) % tabs.length;
+      else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') j = (i - 1 + tabs.length) % tabs.length;
+      else if (e.key === 'Home') j = 0;
+      else if (e.key === 'End') j = tabs.length - 1;
+      if (j === null) return;
+      e.preventDefault(); activate(tabs[j]); tabs[j].focus();
     });
   });
 })();
@@ -484,13 +495,21 @@ function cropGlyphsFromText(cnv, glyphs, pageWPt) {
     const ext = extOf(currentFile);
     document.getElementById('sourceType').textContent = ext.toUpperCase();
 
-    let imgBitmap = null, pdfPage = null, pdfDoc = null;
+    let imgBitmap = null, pdfPage = null, pdfDoc = null, pdfMeta = null;
     if (ext === 'pdf') {
       if (typeof pdfjsLib === 'undefined') { showToast(t('toastPdfMissing'), 'error'); spinner.classList.add('hidden'); prog.textContent = ''; return; }
       prog.textContent = t('pdfLoading');
       const ab = await readFileAsArrayBuffer(currentFile);
       const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
       pdfDoc = pdf;
+      try {
+        const md = await pdf.getMetadata();
+        const info = (md && md.info) || {};
+        pdfMeta = {
+          producer: info.Producer || info.Creator || '',
+          created: Core.formatPdfDate(info.CreationDate || '')
+        };
+      } catch (e) { warn('[PDF metadata]', e); }
       const page = await pdf.getPage(1);
       pdfPage = page;
       const viewport = page.getViewport({ scale: 1.5 });
@@ -582,7 +601,8 @@ function cropGlyphsFromText(cnv, glyphs, pageWPt) {
             layoutVec: [Core.ptToPx(fontSizePt), Core.ptToPx(lineGapPt), mmToPx(marginsMM.left), mmToPx(marginsMM.right), mmToPx(marginsMM.top), mmToPx(marginsMM.bottom)],
             extras: {
               method: 'text-layer', pages: nPages, analyzedPages: perPage.length,
-              marginSpreadMm: agg ? agg.spreadMm : 0, outlierPages: agg ? agg.outliers : []
+              marginSpreadMm: agg ? agg.spreadMm : 0, outlierPages: agg ? agg.outliers : [],
+              pdfMeta: pdfMeta || undefined
             }
           });
           spinner.classList.add('hidden'); prog.textContent = t('done');
@@ -629,7 +649,7 @@ function cropGlyphsFromText(cnv, glyphs, pageWPt) {
         marginsMM: { left: Core.pxToMm(leftMarginPx), right: Core.pxToMm(rightMarginPx), top: Core.pxToMm(topMarginPx), bottom: Core.pxToMm(bottomMarginPx) },
         glyphSigs: sampleGlyphs(canvas, words),
         layoutVec: [fontSizePx, lineGapPx, leftMarginPx, rightMarginPx, topMarginPx, bottomMarginPx],
-        extras: { method: 'ocr' }
+        extras: { method: 'ocr', pdfMeta: pdfMeta || undefined }
       });
       spinner.classList.add('hidden'); prog.textContent = t('done');
     } catch (error) {
@@ -761,6 +781,10 @@ function cropGlyphsFromText(cnv, glyphs, pageWPt) {
       items.push(t('labelPages', { n: f.extras.pages }));
       items.push(t('labelMarginSpread', { v: (f.extras.marginSpreadMm ?? 0).toFixed(1) }));
       if (f.extras.outlierPages && f.extras.outlierPages.length) items.push(t('labelOutlierPages', { pages: f.extras.outlierPages.join(', ') }));
+    }
+    if (f.extras?.pdfMeta) {
+      if (f.extras.pdfMeta.producer) items.push(t('labelPdfProducer', { v: f.extras.pdfMeta.producer }));
+      if (f.extras.pdfMeta.created) items.push(t('labelPdfCreated', { v: f.extras.pdfMeta.created }));
     }
     if (!items.length) items.push(t('noData'));
     items.forEach(text => { const li = document.createElement('li'); li.textContent = text; ul.appendChild(li); });

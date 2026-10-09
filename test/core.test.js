@@ -195,6 +195,14 @@ test('aggregatePageMetrics: flags a spliced page', () => {
   assert.ok(r.spreadMm > 3);
 });
 
+test('formatPdfDate', () => {
+  assert.equal(core.formatPdfDate("D:20251207010212+09'00'"), '2025-12-07');
+  assert.equal(core.formatPdfDate('D:20260101'), '2026-01-01');
+  assert.equal(core.formatPdfDate('weird'), 'weird');
+  assert.equal(core.formatPdfDate(''), '');
+  assert.equal(core.formatPdfDate(null), '');
+});
+
 test('corpusSummary is a safe primitive string', () => {
   assert.equal(core.corpusSummary({ features: { avg_font_size_px: 12, line_gap_px: 5 } }), 'font 12px / gap 5px');
   assert.equal(core.corpusSummary({ features: {} }), 'font –px / gap –px');
