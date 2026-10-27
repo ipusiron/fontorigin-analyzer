@@ -497,7 +497,8 @@ fontorigin-analyzer/
 ├── messages.js         # i18n辞書（日本語／英語）
 ├── script.js           # UIロジック（i18n適用、OCR、特徴抽出、比較、コーパス管理）
 ├── style.css           # テーマシステム、コンポーネントスタイル
-├── test/               # node --test の単体テスト（core.jsとi18n整合性）
+├── theme-init.js       # 最初の描画の前にテーマ（ライト／ダーク）を決める（<head>で読み込む）
+├── test/               # node --test の単体テスト（core.js・i18n整合性・テーマの判定）
 ├── samples/            # 実験用サンプル（PDF/画像/DOCX/TXT）＋解説
 ├── package.json        # npm test スクリプト
 ├── assets/             # 静的リソース

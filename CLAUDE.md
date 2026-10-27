@@ -25,7 +25,8 @@ This tool is part of the "生成AIで作るセキュリティツール100" (100 
 - `messages.js` - i18n dictionary (ja/en). UMD.
 - `script.js` - UI logic (i18n apply, theme, tabs, file analysis, comparison, corpus management)
 - `style.css` - Theme system (light/dark) and component styles
-- `test/` - `node --test` unit tests for `core.js` and i18n parity (`npm test`)
+- `theme-init.js` - Loaded synchronously in `<head>` right after `style.css`; adds the `dark` class to `<html>` before the first paint (saved `theme` first, otherwise the OS setting). `script.js` reads the class to sync the toggle button
+- `test/` - `node --test` unit tests for `core.js`, i18n parity and `theme-init.js` (`npm test`)
 - `assets/` - Icons and screenshots
 
 ### Key Features

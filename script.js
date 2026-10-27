@@ -88,9 +88,10 @@ if (typeof pdfjsLib === 'undefined') {
   const sun = '<path d="M12 4V2m0 20v-2M4 12H2m20 0h-2M5.64 5.64 4.22 4.22m15.56 15.56-1.42-1.42M18.36 5.64l1.42-1.42M5.64 18.36l-1.42 1.42M12 7a5 5 0 100 10 5 5 0 000-10z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>';
   const moon = '<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>';
 
+  // The initial theme (saved choice, else the OS setting) is set in <head> by
+  // theme-init.js before the first paint; here we only read it to sync the button.
   function current() {
-    try { const s = localStorage.getItem(LS); if (s === 'light' || s === 'dark') return s; } catch (e) {}
-    return matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    return root.classList.contains('dark') ? 'dark' : 'light';
   }
   function apply(theme) {
     const isDark = theme === 'dark';
