@@ -93,20 +93,32 @@ if (typeof pdfjsLib === 'undefined') {
   function current() {
     return root.classList.contains('dark') ? 'dark' : 'light';
   }
+  // Draw the theme and sync the button. This does not save: only a click saves,
+  // so a theme that merely came from the OS keeps following the OS.
   function apply(theme) {
     const isDark = theme === 'dark';
     root.classList.toggle('dark', isDark);
-    try { localStorage.setItem(LS, theme); } catch (e) {}
     const next = isDark ? 'light' : 'dark';
     btn.setAttribute('aria-label', t(next === 'dark' ? 'themeToDark' : 'themeToLight'));
     btn.title = t('themeTitle');
     btn.querySelector('svg').innerHTML = (next === 'dark') ? moon : sun;
   }
+  function hasSavedChoice() {
+    try { const s = localStorage.getItem(LS); return s === 'light' || s === 'dark'; } catch (e) { return false; }
+  }
+  let chosen = hasSavedChoice();
   apply(current());
   btn.addEventListener('click', () => {
-    const now = root.classList.contains('dark') ? 'dark' : 'light';
-    apply(now === 'dark' ? 'light' : 'dark');
+    const next = current() === 'dark' ? 'light' : 'dark';
+    chosen = true;
+    try { localStorage.setItem(LS, next); } catch (e) {}
+    apply(next);
   });
+  // Until the user picks a theme, follow OS changes while the page is open.
+  const osDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+  if (osDark && osDark.addEventListener) {
+    osDark.addEventListener('change', (e) => { if (!chosen) apply(e.matches ? 'dark' : 'light'); });
+  }
   // Keep the theme button label in the active language.
   document.addEventListener('foa:lang', () => apply(root.classList.contains('dark') ? 'dark' : 'light'));
   window.__foaApplyTheme = apply;

@@ -26,7 +26,7 @@ This tool is part of the "生成AIで作るセキュリティツール100" (100 
 - `script.js` - UI logic (i18n apply, theme, tabs, file analysis, comparison, corpus management)
 - `style.css` - Theme system (light/dark) and component styles
 - `theme-init.js` - Loaded synchronously in `<head>` right after `style.css`; adds the `dark` class to `<html>` before the first paint (saved `theme` first, otherwise the OS setting). `script.js` reads the class to sync the toggle button
-- `test/` - `node --test` unit tests for `core.js`, i18n parity and `theme-init.js` (`npm test`)
+- `test/` - `node --test` unit tests for `core.js`, i18n parity, `theme-init.js` and the theme toggle in `script.js` (`npm test`, also run by GitHub Actions)
 - `assets/` - Icons and screenshots
 
 ### Key Features
@@ -63,7 +63,7 @@ The `buildFeatures` function creates a FontPrint JSON with:
 ### Theme System (style.css:21-61)
 - **CSS custom properties** for light/dark themes
 - Automatic OS preference detection (`prefers-color-scheme`)
-- Persistent storage in `localStorage('theme')`
+- Persistent storage in `localStorage('theme')`, written only when the toggle is clicked. Until then nothing is saved and the OS setting is followed, including changes while the page is open (saving on load would freeze the OS-derived theme)
 - Toggle button shows NEXT mode icon (🌙 in light mode, ☀ in dark mode)
 
 ### Dark Theme Palette
@@ -106,7 +106,7 @@ python -m http.server 8000
 - **TXT**: 低 (low) - Virtual render, condition-dependent
 
 ### localStorage Usage
-- `theme`: Current theme (`'light'` or `'dark'`)
+- `theme`: The theme the user chose with the toggle (`'light'` or `'dark'`); absent until the first click
 - `foa_corpus`: Array of saved FontPrint JSON objects
 
 ### Tooltip System (script.js:154-206)
